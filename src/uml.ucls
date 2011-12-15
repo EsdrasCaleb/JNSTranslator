@@ -1,0 +1,152 @@
+<class-diagram version="1.0.4" icons="true" automaticImage="PNG" always-add-relationships="false" generalizations="true" 
+  realizations="true" associations="true" dependencies="false" nesting-relationships="true">  
+  <class id="1" corner="BOTTOM_RIGHT" language="java" name="JNSaNaComplements" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSaNaComplements.java" binary="false">    
+    <position height="-1" width="-1" x="207" y="143"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="2" corner="BOTTOM_RIGHT" language="java" name="JNSAreaInterpreter" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSAreaInterpreter.java" binary="false">    
+    <position height="-1" width="-1" x="630" y="530"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="3" corner="BOTTOM_RIGHT" language="java" name="JNSBodyInterpreter" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSBodyInterpreter.java" binary="false">    
+    <position height="89" width="180" x="139" y="301"/>    
+    <display autosize="false" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="4" corner="BOTTOM_RIGHT" language="java" name="JNSConnectorInterpreter" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSConnectorInterpreter.java" binary="false">    
+    <position height="-1" width="-1" x="3" y="835"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="5" corner="BOTTOM_RIGHT" language="java" name="JNSContextInterpreter" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSContextInterpreter.java" binary="false">    
+    <position height="-1" width="-1" x="327" y="435"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="6" corner="BOTTOM_RIGHT" language="java" name="JNSDescriptorInterpreter" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSDescriptorInterpreter.java" binary="false">    
+    <position height="-1" width="-1" x="-151" y="540"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="7" corner="BOTTOM_RIGHT" language="java" name="JNSHeadInterpreter" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSHeadInterpreter.java" binary="false">    
+    <position height="-1" width="-1" x="-15" y="362"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="8" corner="BOTTOM_RIGHT" language="java" name="JNSInterpreter" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSInterpreter.java" binary="false">    
+    <position height="-1" width="-1" x="-95" y="190"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="9" corner="BOTTOM_RIGHT" language="java" name="JNSjSONComplements" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSjSONComplements.java" binary="false">    
+    <position height="-1" width="-1" x="-122" y="53"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="10" corner="BOTTOM_RIGHT" language="java" name="JNSLinkInterpreter" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSLinkInterpreter.java" binary="false">    
+    <position height="-1" width="-1" x="408" y="689"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="11" corner="BOTTOM_RIGHT" language="java" name="JNSMediaInterpreter" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSMediaInterpreter.java" binary="false">    
+    <position height="-1" width="-1" x="572" y="436"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="12" corner="BOTTOM_RIGHT" language="java" name="JNSMetaInterpreter" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSMetaInterpreter.java" binary="false">    
+    <position height="-1" width="-1" x="107" y="476"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="13" corner="BOTTOM_RIGHT" language="java" name="JNSRegionInterpreter" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSRegionInterpreter.java" binary="false">    
+    <position height="-1" width="-1" x="-194" y="401"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="14" corner="BOTTOM_RIGHT" language="java" name="JNSRuleInterpreter" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSRuleInterpreter.java" binary="false">    
+    <position height="-1" width="-1" x="89" y="635"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="15" corner="BOTTOM_RIGHT" language="java" name="JNSTransitionInterpreter" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSTransitionInterpreter.java" binary="false">    
+    <position height="-1" width="-1" x="-298" y="281"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="16" corner="BOTTOM_RIGHT" language="java" name="JsonReader" project="JNSTranslator" 
+    file="/JNSTranslator/src/JsonReader.java" binary="false">    
+    <position height="-1" width="-1" x="-294" y="145"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="17" corner="BOTTOM_RIGHT" language="java" name="Main" project="JNSTranslator" 
+    file="/JNSTranslator/src/Main.java" binary="false">    
+    <position height="-1" width="-1" x="-309" y="48"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="18" corner="BOTTOM_RIGHT" language="java" name="JNSSwitchInterpreter" project="JNSTranslator" 
+    file="/JNSTranslator/src/JNSSwitchInterpreter.java" binary="false">    
+    <position height="-1" width="-1" x="377" y="532"/>    
+    <display autosize="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <classifier-display autosize="true" package="true" initial-value="false" signature="true" visibility="true">    
+    <attributes public="true" package="true" protected="true" private="true"/>    
+    <operations public="true" package="true" protected="true" private="true"/>  
+  </classifier-display>  
+  <association-display labels="true" multiplicity="true"/>
+</class-diagram>
