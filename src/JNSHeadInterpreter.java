@@ -1,3 +1,5 @@
+import java.util.Vector;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -80,7 +82,6 @@ public class JNSHeadInterpreter {
         if(InterpretaTransicao.getBase().hasTransition())
         	Head.setTransitionBase(InterpretaTransicao.getBase());
         Head.addRegionBase(InterpretadorRegiao.getBase());
-        InsertBases();
         return Head;
     }
 	
@@ -89,6 +90,7 @@ public class JNSHeadInterpreter {
 	 */
 	public void InsertBases() throws XMLException{
 		InterpretadorDescritor.ReInterprets();
+		int i =0;
 		if(InterpretaRegra.getBase().hasRule())
         	Head.setRuleBase(InterpretaRegra.getBase());
         if(InterpretadorDescritor.getBase().hasDescriptor())

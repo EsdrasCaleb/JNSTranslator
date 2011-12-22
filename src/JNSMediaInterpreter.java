@@ -12,7 +12,7 @@ import br.uff.midiacom.xml.XMLException;
 
 
 public class JNSMediaInterpreter {
-	JNSHeadInterpreter interpretadorHead;
+	private JNSHeadInterpreter interpretadorHead;
 	
 	JNSMediaInterpreter(JNSHeadInterpreter interpretadorHead){
 		this.interpretadorHead = interpretadorHead;
@@ -39,10 +39,15 @@ public class JNSMediaInterpreter {
             media.setDescriptor((NCLDescriptor)interpretadorHead.getInterpretadorDescritor().getBase().getDescriptors().get((String)jsnMedia.get("descriptor")));
         }
         else if(jsnMedia.containsKey("region")){
-            NCLDescriptor descritorMeda = new NCLDescriptor(media.getId()+"_Descriptor");
-            descritorMeda.setRegion(interpretadorHead.getInterpretadorRegiao().getBase().findRegion((String)jsnMedia.get("region")));
-            interpretadorHead.getInterpretadorDescritor().getBase().addDescriptor(descritorMeda);
-            media.setDescriptor(descritorMeda);
+            NCLDescriptor descritorMedia = new NCLDescriptor(media.getId()+"_Descriptor");
+            descritorMedia.setRegion(interpretadorHead.getInterpretadorRegiao().getBase().findRegion((String)jsnMedia.get("region")));
+            interpretadorHead.getInterpretadorDescritor().getBase().addDescriptor(descritorMedia);
+            media.setDescriptor(descritorMedia);
+        }
+        else if(media.getMediaType().name().toUpperCase().contains("AUDIO")){
+        	NCLDescriptor descritorMedia = new NCLDescriptor(media.getId()+"_Descriptor");
+        	interpretadorHead.getInterpretadorDescritor().getBase().addDescriptor(descritorMedia);
+            media.setDescriptor(descritorMedia);
         }
         if(jsnMedia.containsKey("anchors")){
             JSONArray jsnAnchors = (JSONArray)jsnMedia.get("anchors");
@@ -50,10 +55,8 @@ public class JNSMediaInterpreter {
             for(i=0;i<jsnAnchors.size();i++){
                  JSONObject elemento = (JSONObject)jsnAnchors.get(i);
                  if(elemento.containsKey("property")){
-                	NCLProperty propriedade = JNSPropertyInterpreter.Interprets((JSONObject)elemento.get("property"));
+                	NCLProperty propriedade = interpretadorHead.getInterpretaRegra().getProperty(JNSjSONComplements.getKey(((JSONObject)elemento.get("property")).toString()));
                     media.addProperty(propriedade);
-                    if(media.getType() == NCLMimeType.APPLICATION_X_GINGA_SETTINGS)
-                    	interpretadorHead.getInterpretaRegra().getGlobalPropertyVector().add(propriedade);
                  }
                  else if(elemento.containsKey("area")){
                      media.addArea(JNSAreaInterpreter.Interprets((JSONObject)elemento.get("area")));

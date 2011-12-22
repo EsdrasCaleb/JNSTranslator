@@ -36,6 +36,7 @@ public class JNSPortInterpreter {
         	nome = nome.substring(0,nome.indexOf('.'));
         }
         NCLPort porta = new NCLPort(nome);
+        nome = (String) port.get(nome);
         NCLNode componente = null;
         NCLInterface nclInterface = null;
         if(contexto instanceof NCLContext)

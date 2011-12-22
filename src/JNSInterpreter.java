@@ -42,6 +42,7 @@ import br.uff.midiacom.ana.rule.NCLRuleBase;
 import br.uff.midiacom.ana.rule.NCLTestRule;
 import br.uff.midiacom.ana.transition.NCLTransition;
 import br.uff.midiacom.ana.transition.NCLTransitionBase;
+import br.uff.midiacom.xml.XMLException;
 
 /**
  *
@@ -50,10 +51,12 @@ import br.uff.midiacom.ana.transition.NCLTransitionBase;
 public class JNSInterpreter {
     
     private Vector VetorDeAuxiliarSwitRule;
+    private Vector GlobalPropertyVector;
     private JNSRuleInterpreter InterpretaRegra;
     
     JNSInterpreter(){
     	VetorDeAuxiliarSwitRule = new Vector();
+    	GlobalPropertyVector = new Vector();
     }
     
 
@@ -61,9 +64,10 @@ public class JNSInterpreter {
  * Metodo pai que interpleta o JSN
  * @param jsn objeto JSON que descreve o documento 
  * @return
+ * @throws XMLException 
  * @throws Exception Retorna exeção em caso de ids mal formatados
  */
-    public String InterpretsJNS(JSONObject jsn) throws Exception{
+    public String InterpretsJNS(JSONObject jsn) throws XMLException {
         NCLDoc docN = new NCLDoc();
 
         //retirando o objeto ncl do jsn
@@ -79,21 +83,49 @@ public class JNSInterpreter {
         docN.setXmlns(br.uff.midiacom.ana.datatype.enums.NCLNamespace.EDTV);
         //retirando cabecalho
         JSONArray jsonHead = (JSONArray)jsonNCL.get("head");
+        fillGlobalProperty((JSONArray) jsonNCL.get("body"));
         fillVars(jsonNCL);
         JNSHeadInterpreter interpretadorHead = new JNSHeadInterpreter();
-    	InterpretaRegra = new JNSRuleInterpreter(VetorDeAuxiliarSwitRule);
+    	InterpretaRegra = new JNSRuleInterpreter(VetorDeAuxiliarSwitRule,GlobalPropertyVector);
     	interpretadorHead.setInterpretaRegra(InterpretaRegra);
         NCLHead cabecalho = interpretadorHead.Interprets(jsonHead);
         docN.setHead(cabecalho);
         JSONArray jsonBody = (JSONArray)jsonNCL.get("body");
         JNSBodyInterpreter intepletaCorpo = new JNSBodyInterpreter(interpretadorHead);
-        docN.setBody(interpretadorHead.Interprets(jsonBody));
+        docN.setBody(intepletaCorpo.Interprets(jsonBody));
         interpretadorHead.InsertBases();
         docN.setHead(cabecalho);
         return docN.parse(0);
     }
+    
+///Preneche o vetor de variaveis glovais nao faz busca dentro de switch
+private void fillGlobalProperty(JSONArray contexto) throws XMLException {
+	int i=0;
+	for(i=0;i<contexto.size();i++){
+        JSONObject elemento = (JSONObject)contexto.get(i);
+        if(elemento.containsKey("media")){
+        	JSONObject jsnMedia = (JSONObject) elemento.get("media");
+        	if(jsnMedia.containsKey("anchors")){
+                JSONArray jsnAnchors = (JSONArray)jsnMedia.get("anchors");
+                int j;
+                for(j=0;j<jsnAnchors.size();j++){
+                     JSONObject anchors = (JSONObject)jsnAnchors.get(i);
+                     if(anchors.containsKey("property")){
+                    	NCLProperty propriedade = JNSPropertyInterpreter.Interprets((JSONObject)anchors.get("property"));
+                    	GlobalPropertyVector.add(propriedade);
+                     }
+                }
+        	}
+        }
+        else if(elemento.containsKey("context")){
+        	 elemento = (JSONObject)elemento.get("context");
+        	 fillGlobalProperty((JSONArray)elemento.get("cBody"));
+        }
+  	}
+}
 
-    /**
+
+	/**
      * 
      * @param jsonNCL
      */
@@ -119,7 +151,7 @@ public class JNSInterpreter {
           	  elemento = (JSONObject)elemento.get("switch");
           	  fillAuxVector(elemento);
             }
-            if(elemento.containsKey("context")){
+            else if(elemento.containsKey("context")){
             	 elemento = (JSONObject)elemento.get("context");
             	 searchInContext((JSONArray)elemento.get("cBody"));
             }

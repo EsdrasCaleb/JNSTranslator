@@ -13,7 +13,16 @@ import br.uff.midiacom.xml.XMLException;
 
 
 public class JNSSwitchInterpreter {
-	static NCLSwitch Interprets(JSONObject jnsSwtic,Object contexto) throws XMLException {
+	private JNSHeadInterpreter interpretadorHead;
+	private JNSMediaInterpreter interpretadorMedia;
+	private JNSContextInterpreter interpretaContexto;
+	
+	JNSSwitchInterpreter(JNSHeadInterpreter interpretadorHead){
+		interpretadorMedia = new JNSMediaInterpreter(interpretadorHead);
+		this.interpretadorHead = interpretadorHead;
+	}
+	
+	NCLSwitch Interprets(JSONObject jnsSwtic,Object contexto) throws XMLException {
         NCLSwitch selecao = new NCLSwitch((String)jnsSwtic.get("id"));
         if(jnsSwtic.containsKey("refer")){
         	selecao.setRefer((NCLSwitch)JNSaNaComplements.FindNode((String)jnsSwtic.get("reger"),contexto));
@@ -24,38 +33,32 @@ public class JNSSwitchInterpreter {
     	Vector nodeID = new Vector();
     	for(i=0;i<chaves.length;i++){
     		NCLTestRule regra = null;
-    		if(chaves[i].contains("=") ||chaves[i].contains(">") || chaves[i].contains("<")){
-    			regra = JNSRuleInterpreter.InterRule(chaves[i]);
+    		String chave = chaves[i];
+    		if(chave.contains("=") ||chave.contains(">") || chave.contains("<")|| chave.contains(" eq ")|| chave.contains(" lt ")||chave.contains(" ne ")||chave.contains(" gte ")||chave.contains(" lte ")||chave.contains(" gt ")){
+    			regra = interpretadorHead.getInterpretaRegra().InterRule(chave);
+    			interpretadorHead.getInterpretaRegra().getBase().addRule(regra);
     		}
-    		else if(chaves[i]!="default"&&chaves[i]!="refer"&&chaves[i]!="id"&&chaves[i]!="vars"){
-    			regra = JNSRuleInterpreter.Base.findRule(chaves[i]);
+    		else if(!chave.equals("default")&&!chave.equals("refer")&&!chave.equals("id")&&!chave.equals("vars")){
+    			regra = interpretadorHead.getInterpretaRegra().getBase().findRule(chave);
     			if(regra==null){
-    				regra =JNSRuleInterpreter.Base.findRule(chaves[i]+"_"+selecao.getId());
+    				regra =interpretadorHead.getInterpretaRegra().getBase().findRule(chave+"_"+selecao.getId());
     			}
     		}
     		if(regra != null){
     			NCLSwitchBindRule bind = new NCLSwitchBindRule();
     			bind.setRule(regra);
     			NCLNode no = null;
-    			if(jnsSwtic.get(chaves[i]) instanceof JSONObject){
-    				JSONObject elemento = (JSONObject)((JSONObject)jnsSwtic.get(chaves[i]));
-				 	if(elemento.containsKey("context")){
-				 		no = JNSContextInterpreter.Interprets((JSONObject)elemento.get("context"),selecao);
-		            }
-		            else if(elemento.containsKey("media")){
-		            	no = JNSMediaInterpreter.Interprets((JSONObject)elemento.get("media"),selecao);
-		            } 
-		            else if(elemento.containsKey("switch")){
-		            	no = Interprets((JSONObject)elemento.get("switch"),selecao);
-		            }
+    			if(jnsSwtic.get(chave) instanceof JSONObject){
+    				JSONObject elemento = (JSONObject)((JSONObject)jnsSwtic.get(chave));
+    				no = InterpretaNo(elemento,selecao);
     				selecao.addNode(no);
     			}
     			else{
-    				no = GetConstituent(chaves[i],selecao);    				
+    				no = GetConstituent(chave,selecao);    				
     			}
     			if(no == null){
     				regras.add(bind);
-    				nodeID.add((String)jnsSwtic.get(chaves[i]));
+    				nodeID.add(chave);
 				}
     			else{
     				bind.setConstituent(no);
@@ -66,16 +69,8 @@ public class JNSSwitchInterpreter {
     	if(jnsSwtic.containsKey("default")){
     		NCLNode no = null;
     		if(jnsSwtic.get("default") instanceof JSONObject){
-    			JSONObject elemento = (JSONObject)((JSONObject)jnsSwtic.get(chaves[i]));
-			 	if(elemento.containsKey("context")){
-			 		no = JNSContextInterpreter.Interprets((JSONObject)elemento.get("context"),selecao);
-	            }
-	            else if(elemento.containsKey("media")){
-	            	no = JNSMediaInterpreter.Interprets((JSONObject)elemento.get("media"),selecao);
-	            } 
-	            else if(elemento.containsKey("switch")){
-	            	no = Interprets((JSONObject)elemento.get("switch"),selecao);
-	            }
+    			JSONObject elemento = (JSONObject)((JSONObject)jnsSwtic.get("default"));			 	
+    			no = InterpretaNo(elemento,selecao);
     			selecao.addNode(no);
     		}
     		else{
@@ -84,13 +79,30 @@ public class JNSSwitchInterpreter {
     		selecao.setDefaultComponent(no);
     	}
     	for(i=0;i<regras.size();i++){
-    		NCLSwitchBindRule bind = new NCLSwitchBindRule();
+    		NCLSwitchBindRule bind = (NCLSwitchBindRule) regras.get(i);
     		bind.setConstituent(GetConstituent((String)nodeID.get(i),selecao));
     		selecao.addBind(bind);
     	}
         return selecao;
     }
 	
+	private NCLNode InterpretaNo(JSONObject elemento,NCLSwitch selecao) throws XMLException {
+	 	NCLNode no = null;
+		if(elemento.containsKey("context")){
+			if(interpretaContexto== null)
+				interpretaContexto = new JNSContextInterpreter(interpretadorHead);
+	 		no = interpretaContexto.Interprets((JSONObject)elemento.get("context"),selecao);
+        }
+        else if(elemento.containsKey("media")){
+        	JSONObject midia = (JSONObject)elemento.get("media");
+        	no = interpretadorMedia.Interprets(midia,selecao);
+        } 
+        else if(elemento.containsKey("switch")){
+        	no = Interprets((JSONObject)elemento.get("switch"),selecao);
+        }
+		return no;
+	}
+
 	private static NCLNode GetConstituent(String nome,NCLSwitch selecao) throws XMLException {
 		NCLNode no = null;
 		String inter = null;

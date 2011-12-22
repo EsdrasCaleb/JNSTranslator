@@ -20,11 +20,13 @@ public class JNSRuleInterpreter {
     private Vector  GlobalPropertyVector;
     private Vector VectorDeAuxiliarSwitRule;
     
-    JNSRuleInterpreter(Vector VectorDeAuxiliarSwitRule){
-    	GlobalPropertyVector = new Vector();
-    	this.VectorDeAuxiliarSwitRule = VectorDeAuxiliarSwitRule;
-    }
     
+    JNSRuleInterpreter(Vector VectorDeAuxiliarSwitRule,Vector GlobalPropertyVector) throws XMLException{
+    	this.GlobalPropertyVector = GlobalPropertyVector;
+    	this.VectorDeAuxiliarSwitRule = VectorDeAuxiliarSwitRule;
+    	Base = new NCLRuleBase();
+    }
+
 	public NCLRuleBase getBase() {
 		return Base;
 	}
@@ -61,7 +63,7 @@ public class JNSRuleInterpreter {
     	}
     	else{
     		expressao.replaceAll("[()]", "");
-    		regra = new NCLRule("id");
+    		regra = new NCLRule(id);
     		regra = interExpressaoDeRule(expressao,(NCLRule)regra);
     	}
     	return regra;
@@ -124,11 +126,11 @@ public class JNSRuleInterpreter {
     	return regra;
     }
 	
-	private NCLProperty  getProperty(String id){
+	public NCLProperty  getProperty(String id){
     	NCLProperty proriedade = null;
     	int i=0;
         for(i=0;i<GlobalPropertyVector.size();i++){
-        	if(((NCLProperty)GlobalPropertyVector.get(i)).getId() == id)
+        	if(((NCLProperty)GlobalPropertyVector.get(i)).getId().equals(id))
         		return (NCLProperty)GlobalPropertyVector.get(i);
         }
     	return null;
@@ -142,7 +144,7 @@ public class JNSRuleInterpreter {
     }
 	
 	/**
-     * Adiciona as regra caso ela tenha o campo vars, ou seja usada a mesma regra com mais de uma variavel(reuso)
+     * Adiciona as regra caso ela seja usada a mesma regra com mais de uma variavel(reuso)
      * @param regra jsonObject que contem a regra
      * @return
 	 * @throws XMLException 
@@ -174,10 +176,6 @@ public class JNSRuleInterpreter {
     		}
     	}
 		return retorno;
-	}
-
-	Vector getGlobalPropertyVector() {
-		return this.GlobalPropertyVector;
 	}
     
 }

@@ -4,15 +4,13 @@
  */
 
 
-import br.uff.midiacom.ana.NCLInvalidIdentifierException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.URISyntaxException;
-
-import javax.xml.parsers.ParserConfigurationException;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
+
+import br.uff.midiacom.xml.XMLException;
 
 /**
  *
@@ -21,19 +19,23 @@ import org.json.simple.parser.ParseException;
 public class Main {
 
     /** 
-     * Função principal que irá ler o documento JSN
-     * @param args the command line arguments "args"s que dirão os arquivos de entrada e saida
+     * Funï¿½ï¿½o principal que irï¿½ ler o documento JSN
+     * @param args the command line arguments "args"s que dirï¿½o os arquivos de entrada e saida
+     * @throws ParseException 
+     * @throws XMLException 
+     * @throws IOException 
      * @throws Exception 
      */
-    public static void main(String[] args) throws Exception {
-    	String arquivoEntrada = "C:\\NCL\\teste.jns";
-    	String arquivoSaida = "C:\\NCL\\teste.ncl";
+    public static void main(String[] args) throws ParseException, XMLException, IOException {
+    	String arquivoEntrada = "/home/caleb/exemplosJNS/exemplo3.jns";
+    	String arquivoSaida = "/home/caleb/exemplosJNS/exemplo3.ncl";
     	if(args.length>1)
     		arquivoEntrada = args[0];
     	if(args.length>2)
     		arquivoSaida = args[1];
     	JSONObject jns = JsonReader.Read(arquivoEntrada);
-        String arquivoFinal = JNSInterpreter.InterpretsJNS(jns);
+    	JNSInterpreter interpretador = new JNSInterpreter();
+        String arquivoFinal = interpretador.InterpretsJNS(jns);
         FileWriter writer = new FileWriter(arquivoSaida);
         PrintWriter saida = new PrintWriter(writer);
         saida.print(arquivoFinal);

@@ -38,7 +38,7 @@ import br.uff.midiacom.xml.datatype.number.MaxType;
 
 
 public class JNSConnectorInterpreter {
-	 NCLConnectorBase Base;
+	 private NCLConnectorBase Base;
 	 
 	 JNSConnectorInterpreter() throws XMLException{
 		 Base = new NCLConnectorBase(); 

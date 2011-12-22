@@ -48,17 +48,25 @@ import br.uff.midiacom.xml.datatype.number.MaxType;
 
 
 public class JNSLinkInterpreter {
-	private static int ConnectorIndex = 0;
-	private static int IndiceAssassement = 0;
+	private int ConnectorIndex = 0;
+	private int IndiceAssassement = 0;
+	private JNSHeadInterpreter interpretadorHead;
 	
-	static NCLLink Interprets(JSONObject jnsLink,Object contexto) throws XMLException{
+	JNSLinkInterpreter(JNSHeadInterpreter interpretadorHead){
+		this.interpretadorHead = interpretadorHead;
+	}
+	
+	NCLLink Interprets(JSONObject jnsLink,Object contexto) throws XMLException{
         NCLLink elo = new NCLLink();
+        if(jnsLink.containsKey("id")){
+        	elo.setId((String) jnsLink.get("id"));
+        }
         if(jnsLink.containsKey("expression")){
         	interpretsExpression(((String)jnsLink.get("expression")).replace('\'', '\"'),elo,contexto);
         }
         else{
         	if(jnsLink.containsKey("xconector")){
-        		elo.setXconnector(JNSaNaComplements.FindConnector((String)jnsLink.get("xconector"),JNSConnectorInterpreter.Base));
+        		elo.setXconnector(JNSaNaComplements.FindConnector((String)jnsLink.get("xconector"),interpretadorHead.getInterpretaConnector().getBase()));
         	}
         	if(jnsLink.containsKey("params")){ // pegar parametros e por eles num array
         		JSONArray jsnParams = (JSONArray) jnsLink.get("params");
@@ -85,18 +93,18 @@ public class JNSLinkInterpreter {
         return elo;
     }
 
-	private static void interpretsExpression(String expression, NCLLink elo,Object contexto) throws XMLException {
+	private void interpretsExpression(String expression, NCLLink elo,Object contexto) throws XMLException {
 		String expresaoCondicao = expression.substring(0,expression.indexOf("then"));
         String expressaoAcao =  expression.substring(expression.indexOf("then")+4,expression.length());
         NCLCausalConnector nConnector = new NCLCausalConnector("Connector_Padrao_Interpreter"+ConnectorIndex++);
 		nConnector.setCondition(interpretsCondExpression(expresaoCondicao.trim(),elo,contexto));
 		nConnector.setAction(interpretsActExpression(expressaoAcao.trim(),elo,contexto));
-        JNSConnectorInterpreter.Base.addCausalConnector(nConnector);
+		interpretadorHead.getInterpretaConnector().getBase().addCausalConnector(nConnector);
 		elo.setXconnector(nConnector);
 		IndiceAssassement = 0;
 	}
 
-	private static NCLCondition interpretsCondExpression(String expresaoCondicao,NCLLink elo,Object contexto) throws XMLException {
+	private NCLCondition interpretsCondExpression(String expresaoCondicao,NCLLink elo,Object contexto) throws XMLException {
 		NCLCondition codicaoRetorno = null;
 		if(expresaoCondicao.contains("and")||expresaoCondicao.contains("or")){
 			codicaoRetorno = new NCLCompoundCondition();
@@ -347,7 +355,7 @@ public class JNSLinkInterpreter {
 		return codicaoRetorno;
 	}
 	
-	private static NCLAction interpretsActExpression(String expresaoAcao,NCLLink elo,Object contexto) throws XMLException {
+	private NCLAction interpretsActExpression(String expresaoAcao,NCLLink elo,Object contexto) throws XMLException {
 		NCLAction acao = null;
     	if(expresaoAcao.contains(";")||expresaoAcao.contains("||")){
     		acao = new NCLCompoundAction();
@@ -493,7 +501,7 @@ public class JNSLinkInterpreter {
     	return acao;
 	}
 
-	private static NCLParam interpretsParameter(JSONObject parameter,NCLParamInstance instancia,NCLLink elo) throws XMLException {
+	private NCLParam interpretsParameter(JSONObject parameter,NCLParamInstance instancia,NCLLink elo) throws XMLException {
 		String obParametro = (String)JNSjSONComplements.getKey(parameter.toString());
 		NCLParam parametro = new NCLParam(instancia);
 		parametro.setName((NCLConnectorParam)elo.getXconnector().getConnectorParams().get(obParametro));
@@ -501,7 +509,7 @@ public class JNSLinkInterpreter {
 		return parametro;
 	}
 
-	private static NCLBind interpretsBind(Object obBind,String role,Object contexto,NCLLink elo) throws XMLException {
+	private NCLBind interpretsBind(Object obBind,String role,Object contexto,NCLLink elo) throws XMLException {
 		NCLBind bind = new NCLBind();
 		NCLRole nclRole = new NCLRole(role);
 		bind.setRole(nclRole);
@@ -524,7 +532,7 @@ public class JNSLinkInterpreter {
 				}
 			}
 			if(objeto.containsKey("descriptor")){
-				bind.setDescriptor(JNSaNaComplements.FindDescriptor((String)objeto.get("descriptor"), JNSDescriptorInterpreter.Base));
+				bind.setDescriptor(interpretadorHead.getInterpretadorDescritor().getBase().findDescriptor((String)objeto.get("descriptor")));
 			}
 		}
 		if(componente.contains(".")){
