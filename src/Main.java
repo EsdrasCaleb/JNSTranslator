@@ -27,8 +27,8 @@ public class Main {
      * @throws Exception 
      */
     public static void main(String[] args) throws ParseException, XMLException, IOException {
-    	String arquivoEntrada = "/home/caleb/exemplosJNS/exemplo3.jns";
-    	String arquivoSaida = "/home/caleb/exemplosJNS/exemplo3.ncl";
+    	String arquivoEntrada = "/home/caleb/exemplosJNS/exemploSimples.jns";
+    	String arquivoSaida = "/home/caleb/exemplosJNS/exemploteste.ncl";
     	if(args.length>1)
     		arquivoEntrada = args[0];
     	if(args.length>2)

@@ -187,7 +187,7 @@ public class JNSConnectorInterpreter {
     		condicao.setRole(new NCLRole(NCLDefaultConditionRole.ONRESUME));	    		
     	}
     	else if(simpleCondExpression.toLowerCase().startsWith("onselection")){
-    		condicao.setRole(new NCLRole(NCLDefaultConditionRole.ONRESUME));	 
+    		condicao.setRole(new NCLRole(NCLDefaultConditionRole.ONSELECTION));	 
     	}
     	else{
     		NCLAssessmentStatement assessement = interAssessmentStatement(simpleCondExpression,connectorPai);

@@ -96,7 +96,7 @@ public class JNSLinkInterpreter {
 	private void interpretsExpression(String expression, NCLLink elo,Object contexto) throws XMLException {
 		String expresaoCondicao = expression.substring(0,expression.indexOf("then"));
         String expressaoAcao =  expression.substring(expression.indexOf("then")+4,expression.length());
-        NCLCausalConnector nConnector = new NCLCausalConnector("Connector_Padrao_Interpreter"+ConnectorIndex++);
+        NCLCausalConnector nConnector = new NCLCausalConnector("Connector_Padrao"+ConnectorIndex++);
 		nConnector.setCondition(interpretsCondExpression(expresaoCondicao.trim(),elo,contexto));
 		nConnector.setAction(interpretsActExpression(expressaoAcao.trim(),elo,contexto));
 		interpretadorHead.getInterpretaConnector().getBase().addCausalConnector(nConnector);
@@ -388,7 +388,7 @@ public class JNSLinkInterpreter {
 				for(int j=0;j<pequenasExpessoes.length;j++)
 				{
 					if(pequenasExpessoes[j].trim()!=""){
-						((NCLCompoundAction)acao).addAction(interpretsActExpression(expresaoAcao.trim().substring(1,expresaoAcao.indexOf(subExpressao[i])-1),elo,contexto));
+						((NCLCompoundAction)acao).addAction(interpretsActExpression(pequenasExpessoes[j],elo,contexto));
 					}
 				}
 				expresaoAcao = expresaoAcao.trim().substring(expresaoAcao.indexOf(subExpressao[i]), expresaoAcao.length()).replace(subExpressao[i], "");
