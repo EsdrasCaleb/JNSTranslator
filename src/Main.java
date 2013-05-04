@@ -10,7 +10,7 @@ import java.io.PrintWriter;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
-import br.uff.midiacom.xml.XMLException;
+import br.uff.midiacom.ana.util.exception.XMLException;
 
 /**
  *
@@ -19,14 +19,15 @@ import br.uff.midiacom.xml.XMLException;
 public class Main {
 
     /** 
-     * Fun��o principal que ir� ler o documento JSN
+     * Fun��o principal que ir ler o documento JSN
      * @param args the command line arguments "args"s que dir�o os arquivos de entrada e saida
      * @throws ParseException 
      * @throws XMLException 
      * @throws IOException 
+     * @throws InterruptedException 
      * @throws Exception 
      */
-    public static void main(String[] args) throws ParseException, XMLException, IOException {
+    public static void main(String[] args) throws ParseException, XMLException, IOException, InterruptedException {
     	String arquivoEntrada = "/home/caleb/exemplosJNS/exemploSimples.jns";
     	String arquivoSaida = "/home/caleb/exemplosJNS/exemploteste.ncl";
     	if(args.length>1)

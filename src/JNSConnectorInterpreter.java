@@ -1,486 +1,451 @@
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+/*     */ import br.uff.midiacom.ana.connector.NCLAction;
+/*     */ import br.uff.midiacom.ana.connector.NCLAssessmentStatement;
+/*     */ import br.uff.midiacom.ana.connector.NCLAttributeAssessment;
+/*     */ import br.uff.midiacom.ana.connector.NCLCausalConnector;
+/*     */ import br.uff.midiacom.ana.connector.NCLCompoundAction;
+/*     */ import br.uff.midiacom.ana.connector.NCLCompoundCondition;
+/*     */ import br.uff.midiacom.ana.connector.NCLCondition;
+/*     */ import br.uff.midiacom.ana.connector.NCLConnectorBase;
+/*     */ import br.uff.midiacom.ana.connector.NCLConnectorParam;
+/*     */ import br.uff.midiacom.ana.connector.NCLSimpleAction;
+/*     */ import br.uff.midiacom.ana.connector.NCLSimpleCondition;
+/*     */ import br.uff.midiacom.ana.util.enums.NCLActionOperator;
+/*     */ import br.uff.midiacom.ana.util.enums.NCLAttributeType;
+/*     */ import br.uff.midiacom.ana.util.enums.NCLConditionOperator;
+/*     */ import br.uff.midiacom.ana.util.enums.NCLDefaultActionRole;
+/*     */ import br.uff.midiacom.ana.util.enums.NCLDefaultConditionRole;
+/*     */ import br.uff.midiacom.ana.util.enums.NCLEventAction;
+/*     */ import br.uff.midiacom.ana.util.enums.NCLEventType;
+/*     */ import br.uff.midiacom.ana.util.exception.XMLException;
+/*     */ import java.util.Vector;
+/*     */ import org.json.simple.JSONArray;
+/*     */ import org.json.simple.JSONObject;
+/*     */ 
+/*     */ public class JNSConnectorInterpreter
+/*     */ {
+/*     */   private NCLConnectorBase Base;
+/*     */ 
+/*     */   JNSConnectorInterpreter()
+/*     */     throws XMLException
+/*     */   {
+/*  35 */     this.Base = new NCLConnectorBase();
+/*     */   }
+/*     */ 
+/*     */   NCLConnectorBase getBase() {
+/*  39 */     return this.Base;
+/*     */   }
+/*     */ 
+/*     */   void Add(JSONObject jnsConnector) throws XMLException {
+/*  43 */     NCLCausalConnector connector = interConnector(jnsConnector);
+/*  44 */     this.Base.addCausalConnector(connector);
+/*     */   }
+/*     */ 
+/*     */   private NCLCausalConnector interConnector(JSONObject jConnector) throws XMLException {
+/*  48 */     NCLCausalConnector nConnector = new NCLCausalConnector((String)jConnector.get("id"));
+/*  49 */     String expressao = ((String)jConnector.get("expression")).replace('\'', '"');
+/*  50 */     if (jConnector.containsKey("params")) {
+/*  51 */       JSONArray jsonParams = (JSONArray)jConnector.get("params");
+/*  52 */       int i = 0;
+/*  53 */       for (i = 0; i < jsonParams.size(); i++) {
+/*  54 */         nConnector.addConnectorParam(new NCLConnectorParam(((String)jsonParams.get(i)).trim()));
+/*     */       }
+/*     */     }
+/*  57 */     String expresaoCondicao = expressao.substring(0, expressao.indexOf("then"));
+/*  58 */     String expressaoAcao = expressao.substring(expressao.indexOf("then") + 4, expressao.length());
+/*  59 */     interCondition(expresaoCondicao.trim(), nConnector, null);
+/*  60 */     interAction(expressaoAcao.trim(), nConnector);
+/*  61 */     return nConnector;
+/*     */   }
+/*     */ 
+/*     */   private NCLCondition interCondition(String simpleCondExpression, NCLCausalConnector conectorPai, NCLCompoundCondition condicaoPai) throws XMLException {
+/*  65 */     NCLCondition condicao = null;
+/*  66 */     if ((simpleCondExpression.toLowerCase().contains("and")) || (simpleCondExpression.toLowerCase().contains("or"))) {
+/*  67 */       condicao = new NCLCompoundCondition();
+/*  68 */       if (condicaoPai != null)
+/*  69 */         condicaoPai.addCondition(condicao);
+/*     */       else
+/*  71 */         conectorPai.setCondition(condicao);
+/*  72 */       String operador = null;
+/*  73 */       String[] subExpressao = (String[])null;
+/*  74 */       if (simpleCondExpression.contains("(")) {
+/*  75 */         subExpressao = getInnerParentesis(simpleCondExpression);
+/*  76 */         while (subExpressao.length == 1)
+/*  77 */           subExpressao = getInnerParentesis(subExpressao[0]);
+/*  78 */         int i = subExpressao.length - 1;
+/*  79 */         if (subExpressao[i].startsWith("and")) {
+/*  80 */           operador = "and";
+/*  81 */           ((NCLCompoundCondition)condicao).setOperator(NCLConditionOperator.AND);
+/*     */         }
+/*  83 */         else if (subExpressao[i].startsWith("or")) {
+/*  84 */           operador = "or";
+/*  85 */           ((NCLCompoundCondition)condicao).setOperator(NCLConditionOperator.OR);
+/*     */         }
+/*  87 */         if (subExpressao[i].contains("delay")) {
+/*  88 */           String delay = subExpressao[i].substring(subExpressao[i].indexOf('=') + 1, subExpressao[i].length()).trim();
+/*  89 */           ((NCLCompoundCondition)condicao).setDelay(delay.replaceAll("'", ""));
+/*     */         }
+/*  91 */         i = 0;
+/*  92 */         while (operador == null) {
+/*  93 */           if (subExpressao[i].startsWith("and")) {
+/*  94 */             operador = "and";
+/*  95 */             ((NCLCompoundCondition)condicao).setOperator(NCLConditionOperator.AND);
+/*     */           }
+/*  97 */           else if (subExpressao[i].startsWith("or")) {
+/*  98 */             operador = "or";
+/*  99 */             ((NCLCompoundCondition)condicao).setOperator(NCLConditionOperator.OR);
+/*     */           }
+/* 101 */           i++;
+/*     */         }
+/*     */       }
+/*     */       else {
+/* 105 */         if (simpleCondExpression.contains("and")) {
+/* 106 */           operador = "and";
+/* 107 */           ((NCLCompoundCondition)condicao).setOperator(NCLConditionOperator.AND);
+/*     */         }
+/* 109 */         else if (simpleCondExpression.contains("or")) {
+/* 110 */           operador = "or";
+/* 111 */           ((NCLCompoundCondition)condicao).setOperator(NCLConditionOperator.OR);
+/*     */         }
+/* 113 */         subExpressao = simpleCondExpression.split(operador);
+/*     */       }
+/* 115 */       for (int i = 0; i < subExpressao.length; i++) {
+/* 116 */         if (subExpressao[i].startsWith(operador)) {
+/* 117 */           if (!subExpressao[i].equals(operador)) {
+/* 118 */             String[] sub = subExpressao[i].split(operador);
+/* 119 */             for (int j = 0; j < sub.length; j++) {
+/* 120 */               if (sub[j].trim().length() > 0) {
+/* 121 */                 NCLAssessmentStatement assessement = new NCLAssessmentStatement();
+/* 122 */                 String comparador = JNSaNaComplements.InterpretaComparador(sub[j], assessement);
+/* 123 */                 if (comparador != null)
+/* 124 */                   interAssessmentStatement(sub[j], (NCLCompoundCondition)condicao);
+/*     */                 else
+/* 126 */                   interSimpleCondition(sub[j], conectorPai, condicao);
+/*     */               }
+/*     */             }
+/*     */           }
+/*     */         }
+/*     */         else {
+/* 132 */           interCondition(subExpressao[i], conectorPai, (NCLCompoundCondition)condicao);
+/*     */         }
+/*     */       }
+/*     */     }
+/*     */     else
+/*     */     {
+/* 138 */       NCLAssessmentStatement assessement = new NCLAssessmentStatement();
+/* 139 */       String comparador = JNSaNaComplements.InterpretaComparador(simpleCondExpression, assessement);
+/* 140 */       if (comparador != null) {
+/* 141 */         interAssessmentStatement(simpleCondExpression, condicaoPai);
+/* 142 */         return null;
+/*     */       }
+/*     */ 
+/* 145 */       condicao = interSimpleCondition(simpleCondExpression.trim(), conectorPai, condicaoPai);
+/*     */     }
+/*     */ 
+/* 149 */     return condicao;
+/*     */   }
+/*     */ 
+/*     */   private NCLCondition interSimpleCondition(String simpleCondExpression, NCLCausalConnector connectorPai, NCLCondition condicaoPai) throws XMLException
+/*     */   {
+/* 154 */     NCLSimpleCondition condicao = new NCLSimpleCondition();
+/* 155 */     if (condicaoPai != null)
+/* 156 */       ((NCLCompoundCondition)condicaoPai).addCondition(condicao);
+/*     */     else
+/* 158 */       connectorPai.setCondition(condicao);
+/* 159 */     if (simpleCondExpression.toLowerCase().contains(" with ")) {
+/* 160 */       String[] parametrosExtras = simpleCondExpression.substring(simpleCondExpression.indexOf("with ") + 4, simpleCondExpression.length()).split(",");
+/* 161 */       condicao = (NCLSimpleCondition)JNSaNaComplements.adicionaParametrosExtas(condicao, parametrosExtras);
+/*     */     }
+/*     */ 
+/* 164 */     if (simpleCondExpression.toLowerCase().startsWith("onbegin"))
+/*     */     {
+/* 167 */       if (simpleCondExpression.toLowerCase().startsWith("onbeginatribuition")) {
+/* 168 */         condicao.setRole(NCLDefaultConditionRole.ONBEGINATTRIBUTION);
+/*     */       }
+/*     */       else {
+/* 171 */         condicao.setRole(NCLDefaultConditionRole.ONBEGIN);
+/*     */       }
+/*     */     }
+/* 174 */     else if (simpleCondExpression.toLowerCase().startsWith("onend")) {
+/* 175 */       if (simpleCondExpression.toLowerCase().startsWith("onendattribution")) {
+/* 176 */         condicao.setRole(NCLDefaultConditionRole.ONENDATTRIBUTION);
+/*     */       }
+/*     */       else {
+/* 179 */         condicao.setRole(NCLDefaultConditionRole.ONEND);
+/*     */       }
+/*     */     }
+/* 182 */     else if (simpleCondExpression.toLowerCase().startsWith("onabort")) {
+/* 183 */       condicao.setRole(NCLDefaultConditionRole.ONABORT);
+/*     */     }
+/* 185 */     else if (simpleCondExpression.toLowerCase().startsWith("onresume")) {
+/* 186 */       condicao.setRole(NCLDefaultConditionRole.ONRESUME);
+/*     */     }
+/* 188 */     else if (simpleCondExpression.toLowerCase().startsWith("onselection")) {
+/* 189 */       condicao.setRole(NCLDefaultConditionRole.ONSELECTION);
+/*     */     }
+/*     */     else {
+/* 192 */       condicao.setRole(simpleCondExpression.substring(0, simpleCondExpression.indexOf("with")).trim());
+/*     */     }
+/*     */ 
+/* 195 */     return condicao;
+/*     */   }
+/*     */ 
+/*     */   private void interAssessmentStatement(String asessemtExpr, NCLCompoundCondition condicaoPai) throws XMLException {
+/* 199 */     NCLAssessmentStatement assessement = new NCLAssessmentStatement();
+/* 200 */     condicaoPai.addStatement(assessement);
+/* 201 */     String[] valValor = (String[])null;
+/* 202 */     String comparador = null;
+/* 203 */     comparador = JNSaNaComplements.InterpretaComparador(asessemtExpr, assessement);
+/* 204 */     valValor = asessemtExpr.split(comparador);
+/* 205 */     for (int indice = 0; indice < valValor.length; indice++) {
+/* 206 */       int end = valValor[indice].trim().indexOf(" ");
+/* 207 */       if (indice > 0)
+/* 208 */         end = valValor[indice].trim().length();
+/* 209 */       String role = valValor[indice].trim().substring(0, end);
+/* 210 */       if (valValor[indice].toLowerCase().contains(" with ")) {
+/* 211 */         NCLAttributeAssessment atributeAss = new NCLAttributeAssessment();
+/* 212 */         atributeAss.setRole(role);
+/* 213 */         String[] parametrosExtras = valValor[indice].substring(valValor[indice].indexOf(" with ") + 5, valValor[indice].length()).split(",");
+/* 214 */         for (int i = 0; i < parametrosExtras.length; i++) {
+/* 215 */           if (parametrosExtras[i].toLowerCase().contains("eventtype")) {
+/* 216 */             String tipo = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"") + 1, parametrosExtras[i].length());
+/* 217 */             tipo = tipo.substring(0, tipo.indexOf('"'));
+/* 218 */             atributeAss.setEventType(NCLEventType.valueOf(tipo.toUpperCase()));
+/*     */           }
+/* 220 */           else if (parametrosExtras[i].toLowerCase().contains("attributetype")) {
+/* 221 */             String tipo = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"") + 1, parametrosExtras[i].length());
+/* 222 */             tipo = tipo.substring(0, tipo.indexOf('"'));
+/* 223 */             atributeAss.setAttributeType(NCLAttributeType.getEnumType(tipo));
+/*     */           }
+/* 225 */           else if (parametrosExtras[i].toLowerCase().contains("key")) {
+/* 226 */             String key = parametrosExtras[i].substring(parametrosExtras[i].indexOf("=") + 1, parametrosExtras[i].length());
+/* 227 */             key = key.replace("\"", "");
+/* 228 */             atributeAss.setKey(key);
+/*     */           }
+/* 230 */           else if (parametrosExtras[i].toLowerCase().contains("offset")) {
+/* 231 */             String offset = parametrosExtras[i].substring(parametrosExtras[i].indexOf("=") + 1, parametrosExtras[i].length());
+/* 232 */             offset = offset.replace("\"", "");
+/* 233 */             atributeAss.setOffset(offset);
+/*     */           }
+/*     */         }
+/* 236 */         assessement.addAttributeAssessment(atributeAss);
+/*     */       }
+/*     */       else {
+/* 239 */         assessement.setValueAssessment(role.replace("\"", ""));
+/*     */       }
+/*     */     }
+/*     */   }
+/*     */ 
+/* 244 */   private NCLAction interAction(String simpleActExpression, NCLCausalConnector connectorPai) throws XMLException { return interAction(simpleActExpression, connectorPai, null); }
+/*     */ 
+/*     */   private NCLAction interAction(String simpleActExpression, NCLCausalConnector connectorPai, NCLCompoundAction acaoPai) throws XMLException {
+/* 247 */     NCLAction acao = null;
+/* 248 */     if ((simpleActExpression.contains(";")) || (simpleActExpression.contains("||"))) {
+/* 249 */       acao = new NCLCompoundAction();
+/* 250 */       if (acaoPai == null)
+/* 251 */         connectorPai.setAction(acao);
+/*     */       else
+/* 253 */         acaoPai.addAction(acao);
+/* 254 */       String operador = null;
+/* 255 */       String[] subExpressao = (String[])null;
+/* 256 */       if (simpleActExpression.contains("(")) {
+/* 257 */         subExpressao = getInnerParentesis(simpleActExpression);
+/* 258 */         while (subExpressao.length == 1)
+/* 259 */           subExpressao = getInnerParentesis(subExpressao[0]);
+/* 260 */         int i = subExpressao.length - 1;
+/* 261 */         if (subExpressao[i].startsWith(";")) {
+/* 262 */           operador = ";";
+/* 263 */           ((NCLCompoundAction)acao).setOperator(NCLActionOperator.SEQ);
+/*     */         }
+/* 265 */         else if (subExpressao[i].startsWith("||")) {
+/* 266 */           operador = "\\|\\|";
+/* 267 */           ((NCLCompoundAction)acao).setOperator(NCLActionOperator.PAR);
+/*     */         }
+/* 269 */         if (subExpressao[i].contains("delay")) {
+/* 270 */           String delay = subExpressao[i].substring(subExpressao[i].indexOf('=') + 1, subExpressao[i].length()).trim();
+/* 271 */           ((NCLCompoundAction)acao).setDelay(delay.replaceAll("'", ""));
+/*     */         }
+/* 273 */         i = 0;
+/* 274 */         while (operador == null) {
+/* 275 */           if (subExpressao[i].startsWith(";")) {
+/* 276 */             operador = ";";
+/* 277 */             ((NCLCompoundAction)acao).setOperator(NCLActionOperator.SEQ);
+/*     */           }
+/* 279 */           else if (subExpressao[i].startsWith("||")) {
+/* 280 */             operador = "\\|\\|";
+/* 281 */             ((NCLCompoundAction)acao).setOperator(NCLActionOperator.PAR);
+/*     */           }
+/* 283 */           i++;
+/*     */         }
+/*     */       }
+/*     */       else {
+/* 287 */         if (simpleActExpression.contains(";")) {
+/* 288 */           operador = ";";
+/* 289 */           ((NCLCompoundAction)acao).setOperator(NCLActionOperator.SEQ);
+/*     */         }
+/* 291 */         else if (simpleActExpression.contains("||")) {
+/* 292 */           operador = "\\|\\|";
+/* 293 */           ((NCLCompoundAction)acao).setOperator(NCLActionOperator.PAR);
+/*     */         }
+/* 295 */         subExpressao = simpleActExpression.split(operador);
+/*     */       }
+/* 297 */       String operator = operador;
+/* 298 */       if (operador.equals("\\|\\|"))
+/* 299 */         operator = "||";
+/* 300 */       for (int i = 0; i < subExpressao.length; i++) {
+/* 301 */         if (subExpressao[i].startsWith(operator)) {
+/* 302 */           if (!subExpressao[i].equals(operator)) {
+/* 303 */             String[] sub = subExpressao[i].split(operador);
+/* 304 */             for (int j = 0; j < sub.length; j++)
+/* 305 */               if (sub[j].trim().length() > 0)
+/* 306 */                 interSimpleAction(sub[j].trim(), connectorPai, (NCLCompoundAction)acao);
+/*     */           }
+/*     */         }
+/*     */         else {
+/* 310 */           interAction(subExpressao[i], connectorPai, (NCLCompoundAction)acao);
+/*     */         }
+/*     */       }
+/*     */     }
+/*     */     else
+/*     */     {
+/* 316 */       acao = interSimpleAction(simpleActExpression.trim(), connectorPai, acaoPai);
+/*     */     }
+/*     */ 
+/* 319 */     return acao;
+/*     */   }
+/*     */   public static String[] getInnerParentesis(String expression) {
+/* 322 */     Vector auxiliar = new Vector();
+/* 323 */     char[] stringExp = expression.toCharArray();
+/* 324 */     int parem_num = 0;
+/* 325 */     int primeiroInd = 0;
+/* 326 */     int ultimoInd = 0;
+/* 327 */     Boolean adiciona = Boolean.valueOf(false);
+/* 328 */     for (int i = 0; i < stringExp.length; i++) {
+/* 329 */       if (stringExp[i] == '(') {
+/* 330 */         parem_num++;
+/* 331 */         if (!adiciona.booleanValue()) {
+/* 332 */           if ((i > ultimoInd) && (ultimoInd != 0)) {
+/* 333 */             auxiliar.add(expression.substring(ultimoInd + 1, i).trim());
+/*     */           }
+/* 335 */           primeiroInd = i + 1;
+/* 336 */           adiciona = Boolean.valueOf(true);
+/*     */         }
+/*     */       }
+/* 339 */       else if (stringExp[i] == ')') {
+/* 340 */         parem_num--;
+/* 341 */         ultimoInd = i;
+/*     */       }
+/* 343 */       if ((parem_num == 0) && (adiciona.booleanValue())) {
+/* 344 */         auxiliar.add(expression.substring(primeiroInd, ultimoInd).trim());
+/* 345 */         adiciona = Boolean.valueOf(false);
+/*     */       }
+/*     */     }
+/* 348 */     if (ultimoInd != expression.length() - 1)
+/* 349 */       auxiliar.add(expression.substring(ultimoInd + 1, expression.length()).trim());
+/* 350 */     String[] retorno = new String[auxiliar.size()];
+/* 351 */     auxiliar.toArray(retorno);
+/* 352 */     return retorno;
+/*     */   }
+/*     */ 
+/*     */   private NCLAction interSimpleAction(String simpleActExpression, NCLCausalConnector connectorPai) throws XMLException {
+/* 356 */     return interSimpleAction(simpleActExpression, connectorPai, null);
+/*     */   }
+/*     */ 
+/*     */   private NCLAction interSimpleAction(String simpleActExpression, NCLCausalConnector connectorPai, NCLCompoundAction acaoPai) throws XMLException {
+/* 360 */     NCLSimpleAction acao = new NCLSimpleAction();
+/* 361 */     if (acaoPai == null)
+/* 362 */       connectorPai.setAction(acao);
+/*     */     else {
+/* 364 */       acaoPai.addAction(acao);
+/*     */     }
+/* 366 */     if (simpleActExpression.trim().toLowerCase().startsWith("start")) {
+/* 367 */       acao.setRole(NCLDefaultActionRole.START);
+/*     */     }
+/* 369 */     else if (simpleActExpression.trim().toLowerCase().startsWith("stop")) {
+/* 370 */       acao.setRole(NCLDefaultActionRole.STOP);
+/*     */     }
+/* 372 */     else if (simpleActExpression.trim().toLowerCase().startsWith("abort")) {
+/* 373 */       acao.setRole(NCLDefaultActionRole.ABORT);
+/*     */     }
+/* 375 */     else if (simpleActExpression.trim().toLowerCase().startsWith("pause")) {
+/* 376 */       acao.setRole(NCLDefaultActionRole.PAUSE);
+/*     */     }
+/* 378 */     else if (simpleActExpression.trim().toLowerCase().startsWith("resume")) {
+/* 379 */       acao.setRole(NCLDefaultActionRole.RESUME);
+/*     */     }
+/* 381 */     else if (simpleActExpression.trim().toLowerCase().startsWith("set")) {
+/* 382 */       acao.setRole(NCLDefaultActionRole.SET);
+/*     */     }
+/*     */     else {
+/* 385 */       acao.setRole(simpleActExpression.trim().substring(0, simpleActExpression.trim().indexOf(" ")));
+/*     */     }
+/*     */ 
+/* 389 */     if (simpleActExpression.toLowerCase().contains(" with ")) {
+/* 390 */       String[] parametrosExtras = simpleActExpression.substring(simpleActExpression.indexOf("with ") + 4, simpleActExpression.length()).split(",");
+/* 391 */       for (int i = 0; i < parametrosExtras.length; i++) {
+/* 392 */         parametrosExtras[i] = parametrosExtras[i].trim();
+/* 393 */         if (parametrosExtras[i].toLowerCase().contains("delay")) {
+/* 394 */           parametrosExtras[i] = parametrosExtras[i].trim();
+/* 395 */           String delay = parametrosExtras[i].substring(parametrosExtras[i].indexOf("=") + 1, parametrosExtras[i].length()).trim();
+/* 396 */           delay = delay.replace("\"", "").trim();
+/* 397 */           acao.setDelay(delay);
+/*     */         }
+/* 399 */         else if (parametrosExtras[i].toLowerCase().contains("eventtype")) {
+/* 400 */           String tipo = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"") + 1, parametrosExtras[i].length()).trim();
+/* 401 */           tipo = tipo.substring(0, tipo.indexOf('"'));
+/* 402 */           acao.setEventType(NCLEventType.valueOf(tipo.toUpperCase()));
+/*     */         }
+/* 404 */         else if (parametrosExtras[i].toLowerCase().contains("actiontype")) {
+/* 405 */           String tipo = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"") + 1, parametrosExtras[i].length()).trim();
+/* 406 */           tipo = tipo.substring(0, tipo.indexOf('"'));
+/* 407 */           acao.setActionType(NCLEventAction.getEnumType(tipo.toUpperCase()));
+/*     */         }
+/* 409 */         else if (parametrosExtras[i].toLowerCase().contains("value")) {
+/* 410 */           String value = parametrosExtras[i].substring(parametrosExtras[i].indexOf("=") + 1, parametrosExtras[i].length()).trim();
+/* 411 */           value = value.replace("\"", "");
+/* 412 */           acao.setValue(value);
+/*     */         }
+/* 414 */         else if (parametrosExtras[i].toLowerCase().contains("min")) {
+/* 415 */           String min = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"") + 1, parametrosExtras[i].length()).trim();
+/* 416 */           min = min.substring(0, min.indexOf('"'));
+/* 417 */           acao.setMin(Integer.valueOf(Integer.parseInt(min)));
+/*     */         }
+/* 419 */         else if (parametrosExtras[i].toLowerCase().contains("max")) {
+/* 420 */           String max = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"") + 1, parametrosExtras[i].length()).trim();
+/* 421 */           max = max.substring(0, max.indexOf('"'));
+/* 422 */           acao.setMax(max);
+/*     */         }
+/* 424 */         else if (parametrosExtras[i].toLowerCase().contains("qualifier")) {
+/* 425 */           String qual = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"") + 1, parametrosExtras[i].length()).trim();
+/* 426 */           qual = qual.substring(0, qual.indexOf('"'));
+/* 427 */           acao.setQualifier(NCLActionOperator.valueOf(qual.toUpperCase()));
+/*     */         }
+/* 429 */         else if (parametrosExtras[i].toLowerCase().contains("repeat")) {
+/* 430 */           String repeat = parametrosExtras[i].substring(parametrosExtras[i].indexOf("=") + 1, parametrosExtras[i].length()).trim();
+/* 431 */           repeat = repeat.replace("\"", "");
+/* 432 */           acao.setRepeat(repeat);
+/*     */         }
+/* 434 */         else if (parametrosExtras[i].toLowerCase().contains("repeatdelay")) {
+/* 435 */           String delay = parametrosExtras[i].substring(parametrosExtras[i].indexOf("=") + 1, parametrosExtras[i].length()).trim();
+/* 436 */           delay = delay.replace("\"", "");
+/* 437 */           acao.setRepeatDelay(delay);
+/*     */         }
+/* 439 */         else if (parametrosExtras[i].toLowerCase().contains("duration")) {
+/* 440 */           String duration = parametrosExtras[i].substring(parametrosExtras[i].indexOf("=") + 1, parametrosExtras[i].length()).trim();
+/* 441 */           duration = duration.replace("\"", "");
+/* 442 */           acao.setDuration(duration);
+/*     */         }
+/* 444 */         else if (parametrosExtras[i].toLowerCase().contains("by")) {
+/* 445 */           String by = parametrosExtras[i].substring(parametrosExtras[i].indexOf("=") + 1, parametrosExtras[i].length()).trim();
+/* 446 */           by = by.replace("\"", "");
+/* 447 */           acao.setBy(by);
+/*     */         }
+/*     */       }
+/*     */     }
+/* 451 */     return acao;
+/*     */   }
+/*     */ }
 
-import br.uff.midiacom.ana.NCLElement;
-import br.uff.midiacom.ana.connector.NCLAction;
-import br.uff.midiacom.ana.connector.NCLAssessmentStatement;
-import br.uff.midiacom.ana.connector.NCLAttributeAssessment;
-import br.uff.midiacom.ana.connector.NCLCausalConnector;
-import br.uff.midiacom.ana.connector.NCLCompoundAction;
-import br.uff.midiacom.ana.connector.NCLCondition;
-import br.uff.midiacom.ana.connector.NCLCompoundCondition;
-import br.uff.midiacom.ana.connector.NCLConnectorBase;
-import br.uff.midiacom.ana.connector.NCLConnectorParam;
-import br.uff.midiacom.ana.connector.NCLRole;
-import br.uff.midiacom.ana.connector.NCLSimpleAction;
-import br.uff.midiacom.ana.connector.NCLSimpleCondition;
-import br.uff.midiacom.ana.connector.NCLValueAssessment;
-import br.uff.midiacom.ana.datatype.auxiliar.AssValueParamType;
-import br.uff.midiacom.ana.datatype.auxiliar.ByParamType;
-import br.uff.midiacom.ana.datatype.auxiliar.DoubleParamType;
-import br.uff.midiacom.ana.datatype.auxiliar.IntegerParamType;
-import br.uff.midiacom.ana.datatype.auxiliar.KeyParamType;
-import br.uff.midiacom.ana.datatype.auxiliar.StringParamType;
-import br.uff.midiacom.ana.datatype.enums.NCLActionOperator;
-import br.uff.midiacom.ana.datatype.enums.NCLComparator;
-import br.uff.midiacom.ana.datatype.enums.NCLConditionOperator;
-import br.uff.midiacom.ana.datatype.enums.NCLDefaultActionRole;
-import br.uff.midiacom.ana.datatype.enums.NCLDefaultConditionRole;
-import br.uff.midiacom.ana.datatype.enums.NCLEventAction;
-import br.uff.midiacom.ana.datatype.enums.NCLEventType;
-import br.uff.midiacom.ana.datatype.enums.NCLKey;
-import br.uff.midiacom.ana.datatype.enums.NCLEventTransition;
-import br.uff.midiacom.ana.datatype.enums.NCLAttributeType;
-import br.uff.midiacom.ana.descriptor.NCLDescriptor;
-import br.uff.midiacom.ana.rule.NCLCompositeRule;
-import br.uff.midiacom.xml.XMLException;
-import br.uff.midiacom.xml.datatype.number.MaxType;
-
-
-public class JNSConnectorInterpreter {
-	 private NCLConnectorBase Base;
-	 
-	 JNSConnectorInterpreter() throws XMLException{
-		 Base = new NCLConnectorBase(); 
-	 }
-	 
-	 NCLConnectorBase getBase(){
-		 return Base;
-	 }
-	 
-	
-	 void Add(JSONObject jnsConnector) throws XMLException{
-		NCLCausalConnector connector = interConnector(jnsConnector);
-        Base.addCausalConnector(connector);
-	}
-	
-    private  NCLCausalConnector interConnector(JSONObject jConnector) throws XMLException{
-        NCLCausalConnector nConnector = new NCLCausalConnector((String)jConnector.get("id"));
-        String expressao = ((String)jConnector.get("expression")).replace('\'', '\"');
-        if(jConnector.containsKey("params")){
-        	JSONArray jsonParams = (JSONArray)jConnector.get("params");
-        	int i = 0;
-        	for(i=0;i<jsonParams.size();i++){
-        		nConnector.addConnectorParam(new NCLConnectorParam(((String)jsonParams.get(i)).trim()));
-        	}
-        }
-        String expresaoCondicao = expressao.substring(0,expressao.indexOf("then"));
-        String expressaoAcao =  expressao.substring(expressao.indexOf("then")+4,expressao.length());
-        nConnector.setCondition(interCondition(expresaoCondicao.trim(),nConnector));
-        nConnector.setAction((NCLAction)interAction(expressaoAcao.trim(),nConnector));
-        return nConnector;
-    }
-
-	private  NCLCondition interCondition(String simpleCondExpression, NCLCausalConnector conectorPai) throws XMLException{
-    	NCLCondition condicao = null;
-    	if(simpleCondExpression.toLowerCase().contains("and")||simpleCondExpression.toLowerCase().contains("or")){
-    		condicao = new NCLCompoundCondition();
-			String operador = null;
-    		String[] subExpressao = null;
-    		while(operador == null){
-    			subExpressao = simpleCondExpression.split("\\(.*\\)");
-				if(subExpressao[0].toLowerCase().contains("and")){
-					operador = "and";
-					((NCLCompoundCondition)condicao).setOperator(NCLConditionOperator.AND);
-				}
-				else if(subExpressao[0].toLowerCase().contains("or")){
-					operador = "or";
-					((NCLCompoundCondition)condicao).setOperator(NCLConditionOperator.OR);
-				}
-				else{
-					subExpressao = simpleCondExpression.trim().substring(1,simpleCondExpression.indexOf(subExpressao[0])-1).split("\\(.*\\)");
-					if(subExpressao[0].toLowerCase().contains("delay")){
-						subExpressao[0] = subExpressao[0].trim();
-	    				String delay = subExpressao[0].substring(subExpressao[0].indexOf('=')+1,subExpressao[0].length()).trim();
-	    				condicao.setDelay(InterpretaDelay(delay,conectorPai));
-	    			}
-				}
-    		}
-    		for(int i=0;i<subExpressao.length;i++){
-    			if(!simpleCondExpression.toLowerCase().startsWith(subExpressao[i])){
-    				((NCLCompoundCondition)condicao).addCondition(interCondition(simpleCondExpression.trim().substring(1,simpleCondExpression.trim().indexOf(subExpressao[i])-1).trim(),conectorPai));
-    			}
-    			String[] pequenasExpessoes = subExpressao[i].toLowerCase().split(operador);
-				for(int j=0;j<pequenasExpessoes.length;j++)
-				{
-					if(pequenasExpessoes[j].trim()!="")
-						interSimpleCondition(pequenasExpessoes[j],conectorPai,condicao);
-				}
-    			simpleCondExpression = simpleCondExpression.substring(simpleCondExpression.indexOf(subExpressao[i]), simpleCondExpression.length()).replace(subExpressao[i], "").trim();
-    		}
-    	}
-    	else{
-    		condicao= interSimpleCondition(simpleCondExpression,conectorPai,condicao);
-    	}
-    		
-    	return condicao;
-    	
-    }
-
-	private  NCLCondition interSimpleCondition(String simpleCondExpression,NCLCausalConnector connectorPai,NCLCondition condicaoPai) throws XMLException{//envie a string com trim e sem ()
-    	NCLSimpleCondition condicao = new NCLSimpleCondition();
-    	if(simpleCondExpression.toLowerCase().contains(" with ")){
-    		String[] parametrosExtras = simpleCondExpression.substring(simpleCondExpression.indexOf(" with ")+4, simpleCondExpression.length()).split(",");
-    		for(int i=0;i<parametrosExtras.length;i++){
-    			parametrosExtras[i] = parametrosExtras[i].trim();
-    			if(parametrosExtras[i].toLowerCase().contains("delay")){
-    				parametrosExtras[i] = parametrosExtras[i].trim();
-    				String delay = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    				delay = delay.substring(0,delay.indexOf('"'));
-					condicao.setDelay(InterpretaDelay(delay,connectorPai));
-    			}
-    			else if(parametrosExtras[i].toLowerCase().contains("eventtype")){
-    				String tipo = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    	    		tipo = tipo.substring(0,tipo.indexOf('"'));
-    	    		condicao.setEventType(NCLEventType.getEnumType(tipo.toUpperCase()));
-    			}
-    			else if(parametrosExtras[i].toLowerCase().contains("key")){
-    	    		String key = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    	    		key = key.substring(0,key.indexOf('"'));
-    	    		condicao.setKey(InterpretaKey(key,connectorPai));
-    			}
-    			else if(parametrosExtras[i].toLowerCase().contains("transition")){
-    				String transition = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    				transition = transition.substring(0,transition.indexOf('"'));
-    	    		condicao.setTransition(NCLEventTransition.valueOf(transition.toUpperCase()));
-    			}
-    			else if(parametrosExtras[i].toLowerCase().contains("min")){
-    				String min = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    				min = min.substring(0,min.indexOf('"'));
-    				condicao.setMin(Integer.parseInt(min));
-    			}	
-    			else if(parametrosExtras[i].toLowerCase().contains("max")){
-    				String max = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    				max = max.substring(0,max.indexOf('"'));
-    				condicao.setMax(new MaxType(max));
-    			}	
-    			else if(parametrosExtras[i].toLowerCase().contains("qualifier")){
-    				String qual = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    				qual = qual.substring(0,qual.indexOf('"'));
-    				condicao.setQualifier(NCLConditionOperator.valueOf(qual.toUpperCase()));
-    			}	
-    		}
-    	}
-    	
-    	if(simpleCondExpression.toLowerCase().startsWith("onbegin")){
-    		
-    		
-    		if(simpleCondExpression.toLowerCase().startsWith("onbeginatribuition")){
-    			condicao.setRole(new NCLRole(NCLDefaultConditionRole.ONBEGINATTRIBUTION));
-	    	}
-    		else{
-	    		condicao.setRole(new NCLRole(NCLDefaultConditionRole.ONBEGIN));
-    		}
-    	}
-    	else if(simpleCondExpression.toLowerCase().startsWith("onend")){
-    		if(simpleCondExpression.toLowerCase().startsWith("onendatribuition")){
-    			condicao.setRole(new NCLRole(NCLDefaultConditionRole.ONENDATTRIBUTION));
-	    	}
-    		else{
-    			condicao.setRole(new NCLRole(NCLDefaultConditionRole.ONEND));
-    		}
-    	}
-    	else if(simpleCondExpression.toLowerCase().startsWith("onabort")){
-    		condicao.setRole(new NCLRole(NCLDefaultConditionRole.ONABORT));
-    	}
-    	else if(simpleCondExpression.toLowerCase().startsWith("onresume")){
-    		condicao.setRole(new NCLRole(NCLDefaultConditionRole.ONRESUME));	    		
-    	}
-    	else if(simpleCondExpression.toLowerCase().startsWith("onselection")){
-    		condicao.setRole(new NCLRole(NCLDefaultConditionRole.ONSELECTION));	 
-    	}
-    	else{
-    		NCLAssessmentStatement assessement = interAssessmentStatement(simpleCondExpression,connectorPai);
-    		((NCLCompoundCondition)condicaoPai).addStatement(assessement);
-    		return condicaoPai;
-    	}
-    	
-    	if(condicaoPai!= null)
-    		((NCLCompoundCondition)condicaoPai).addCondition(condicao);
-    	else
-    		condicaoPai = condicao;
-    	return condicaoPai;
-    }
-
-	private  NCLAssessmentStatement interAssessmentStatement(String asessemtExpr,NCLCausalConnector connectorPai) throws XMLException {
-    	NCLAssessmentStatement assessement = new NCLAssessmentStatement();
-    	String[] valValor = null;
-    	String comparador = null;
-    	if(asessemtExpr.toLowerCase().contains("==")){
-    		comparador = "==";
-    		assessement.setComparator(NCLComparator.EQ);
-    	}
-    	else if(asessemtExpr.toLowerCase().contains("!=")){
-    		comparador = "!=";
-    		assessement.setComparator(NCLComparator.NE);
-    	}
-    	else if(asessemtExpr.toLowerCase().contains(">=")){
-    		comparador = ">=";
-    		assessement.setComparator(NCLComparator.GTE);
-    	}
-    	else if(asessemtExpr.toLowerCase().contains("<=")){
-    		comparador = "<=";
-    		assessement.setComparator(NCLComparator.LTE);
-    	}
-    	else if(asessemtExpr.toLowerCase().contains(">")){
-    		comparador = ">";
-    		assessement.setComparator(NCLComparator.GT);
-    	}
-    	else if(asessemtExpr.toLowerCase().contains("<")){
-    		comparador = "<";
-    		assessement.setComparator(NCLComparator.LT);
-    	}
-    	else if(asessemtExpr.toLowerCase().contains(" eq ")){
-    		comparador = " eq ";
-    		assessement.setComparator(NCLComparator.EQ);
-    	}
-    	else if(asessemtExpr.toLowerCase().contains(" ne ")){
-    		comparador = " ne ";
-    		assessement.setComparator(NCLComparator.NE);
-    	}
-    	else if(asessemtExpr.toLowerCase().contains(" gte ")){
-    		comparador = " gte ";
-    		assessement.setComparator(NCLComparator.GTE);
-    	}
-    	else if(asessemtExpr.toLowerCase().contains(" lte ")){
-    		comparador = " lte ";
-    		assessement.setComparator(NCLComparator.LTE);
-    	}
-    	else if(asessemtExpr.toLowerCase().contains(" gt ")){
-    		comparador = " gt ";
-    		assessement.setComparator(NCLComparator.GT);
-    	}
-    	else if(asessemtExpr.toLowerCase().contains(" lt ")){
-    		comparador = " lt ";
-    		assessement.setComparator(NCLComparator.LT);
-    	}
-    	valValor = asessemtExpr.split(comparador);
-    	for(int indice=0;indice<valValor.length;indice++){
-			String role = valValor[indice].substring(0,valValor[indice].indexOf(" "));
-			if(valValor[indice].toLowerCase().contains(" with ")){
-				NCLAttributeAssessment atributeAss = new NCLAttributeAssessment();
-				atributeAss.setRole(new NCLRole(role.toUpperCase()));
-	    		String[] parametrosExtras = valValor[indice].substring(valValor[indice].indexOf(" with ")+4, valValor[indice].length()).split(",");
-	    		for(int i=0;i<parametrosExtras.length;i++){
-	    			if(parametrosExtras[i].toLowerCase().contains("eventtype")){
-	    				String tipo = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length());
-	    	    		tipo = tipo.substring(0,tipo.indexOf('"'));
-	    	    		atributeAss.setEventType(NCLEventType.valueOf(tipo.toUpperCase()));
-	    			}
-	    			else if(parametrosExtras[i].toLowerCase().contains("attributetype")){
-	    	    		String tipo = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length());
-	    	    		tipo = tipo.substring(0,tipo.indexOf('"'));
-	    	    		atributeAss.setAttributeType(NCLAttributeType.valueOf(tipo.toUpperCase()));
-	    			}
-	    			else if(parametrosExtras[i].toLowerCase().contains("key")){
-	    	    		String key = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length());
-	    	    		key = key.substring(0,key.indexOf('"'));
-    	    			atributeAss.setKey(InterpretaKey(key,connectorPai));
-	    			}
-	    			else if(parametrosExtras[i].toLowerCase().contains("offset")){
-	    	    		String offset = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length());
-	    	    		offset = offset.substring(0,offset.indexOf('"'));
-	    	    		atributeAss.setOffset(InterpretaInteger(offset,connectorPai));
-	    			}
-	    		}
-	    		try {
-					assessement.addAttributeAssessment(atributeAss);
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-	    	}
-			else{
-				NCLValueAssessment value = new NCLValueAssessment();
-	    		value.setValue(InterpretaAssValueParam(role,connectorPai));
-	    		assessement.setValueAssessment(value);
-			}
-    	}
-    	return assessement;
-	}
-
-	private  NCLAction interAction(String simpleActExpression, NCLCausalConnector connectorPai) throws XMLException {
-    	NCLAction acao = null;
-    	if(simpleActExpression.toLowerCase().contains(";")||simpleActExpression.toLowerCase().contains("||")){
-    		acao = new NCLCompoundAction();
-    		String operador = null;
-    		String[] subExpressao = null;
-    		while(operador == null){
-    			subExpressao = simpleActExpression.split("\\(.*\\)");
-				if(subExpressao[0].toLowerCase().contains(";")){
-					operador = ";";
-		    		((NCLCompoundAction)acao).setOperator(NCLActionOperator.SEQ);
-				}
-				else if(subExpressao[0].toLowerCase().contains("||")){
-					operador = "||";
-		    		((NCLCompoundAction)acao).setOperator(NCLActionOperator.PAR);
-				}
-				else{
-					subExpressao = simpleActExpression.trim().substring(1,simpleActExpression.indexOf(subExpressao[0])-1).split("\\(.*\\)");
-					if(subExpressao[0].toLowerCase().contains("delay")){
-						subExpressao[0] = subExpressao[0].trim();
-	    				String delay = subExpressao[0].substring(subExpressao[0].indexOf('=')+1,subExpressao[0].length()).trim();
-	    				acao.setDelay(InterpretaDelay(delay,connectorPai));
-	    			}
-				}
-    		}
-    		for(int i=0;i<subExpressao.length;i++){
-    			if(!simpleActExpression.startsWith(subExpressao[i])){
-    				((NCLCompoundAction)acao).addAction(interAction(simpleActExpression.trim().substring(1,simpleActExpression.indexOf(subExpressao[i])-1),connectorPai));
-    			}
-    			String[] pequenasExpessoes = subExpressao[i].split(operador);
-				for(int j=0;j<pequenasExpessoes.length;j++)
-				{
-					if(pequenasExpessoes[j].trim()!=""){
-						((NCLCompoundAction)acao).addAction(interSimpleAction(pequenasExpessoes[j],connectorPai));
-					}
-				}
-    			simpleActExpression = simpleActExpression.trim().substring(simpleActExpression.indexOf(subExpressao[i]), simpleActExpression.length()).replace(subExpressao[i], "");
-    		}
-    	}
-    	else{
-    		acao = interSimpleAction(simpleActExpression,connectorPai);
-    	}
-    		
-    	return acao;
-	}
-    
-    private  NCLAction interSimpleAction(String simpleActExpression,NCLCausalConnector connectorPai) throws XMLException{//envie a string com trim e sem ()
-    	NCLSimpleAction acao = new NCLSimpleAction();
-    	
-    	if(simpleActExpression.toLowerCase().startsWith("start")){
-    		acao.setRole(new NCLRole(NCLDefaultActionRole.START));
-    	}
-    	else if(simpleActExpression.toLowerCase().startsWith("stop")){
-    		acao.setRole(new NCLRole(NCLDefaultActionRole.STOP));
-    	}
-    	else if(simpleActExpression.toLowerCase().startsWith("abort")){
-    		acao.setRole(new NCLRole(NCLDefaultActionRole.ABORT));
-    	}
-    	else if(simpleActExpression.toLowerCase().startsWith("pause")){
-    		acao.setRole(new NCLRole(NCLDefaultActionRole.PAUSE));
-    	}
-    	else if(simpleActExpression.toLowerCase().startsWith("resume")){
-    		acao.setRole(new NCLRole(NCLDefaultActionRole.RESUME));
-    	}
-    	else if(simpleActExpression.toLowerCase().startsWith("set")){
-    		acao.setRole(new NCLRole(NCLDefaultActionRole.SET));
-    		int indiceSet = simpleActExpression.toLowerCase().indexOf("set")+4;
-    		String valor = simpleActExpression.substring(indiceSet, simpleActExpression.indexOf(' ',indiceSet));
-    		acao.setValue(InterpretaValor(valor,connectorPai));
-    	}
-    	else{
-    		acao.setRole(new NCLRole(simpleActExpression.trim().substring(0,simpleActExpression.trim().indexOf(" "))));
-    	}
-    		
-
-    	if(simpleActExpression.toLowerCase().contains(" with ")){
-    		String[] parametrosExtras = simpleActExpression.substring(simpleActExpression.indexOf(" with ")+4, simpleActExpression.length()).split(",");
-    		for(int i=0;i<parametrosExtras.length;i++){
-    			parametrosExtras[i] = parametrosExtras[i].trim();
-    			if(parametrosExtras[i].toLowerCase().contains("delay")){
-    				parametrosExtras[i] = parametrosExtras[i].trim();
-    				String delay = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    				delay = delay.substring(0,delay.indexOf('"'));
-    				acao.setDelay(InterpretaDelay(delay,connectorPai));
-    			}
-    			else if(parametrosExtras[i].toLowerCase().contains("eventtype")){
-    				String tipo = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    	    		tipo = tipo.substring(0,tipo.indexOf('"'));
-    	    		acao.setEventType(NCLEventType.valueOf(tipo.toUpperCase()));
-    			}
-    			else if(parametrosExtras[i].toLowerCase().contains("actiontype")){
-    	    		String tipo = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    	    		tipo = tipo.substring(0,tipo.indexOf('"'));
-    	    		acao.setActionType(NCLEventAction.getEnumType(tipo.toUpperCase()));
-    			}
-    			else if(parametrosExtras[i].toLowerCase().contains("value")){
-    				String value = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    				value = value.substring(0,value.indexOf('"'));
-    	    		acao.setValue(InterpretaValor(value,connectorPai));
-    			}
-    			else if(parametrosExtras[i].toLowerCase().contains("min")){
-    				String min = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    				min = min.substring(0,min.indexOf('"'));
-    	    		acao.setMin(Integer.parseInt(min));
-    			}	
-    			else if(parametrosExtras[i].toLowerCase().contains("max")){
-    				String max = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    				max = max.substring(0,max.indexOf('"'));
-    				acao.setMax(new MaxType(max));
-    			}	
-    			else if(parametrosExtras[i].toLowerCase().contains("qualifier")){
-    				String qual = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    				qual = qual.substring(0,qual.indexOf('"'));
-    	    		acao.setQualifier(NCLActionOperator.valueOf(qual.toUpperCase()));
-    			}
-    			else if(parametrosExtras[i].toLowerCase().contains("repeat")){
-    				String repeat = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    				repeat = repeat.substring(0,repeat.indexOf('"'));
-    				acao.setRepeat(InterpretaInteger(repeat,connectorPai));
-    			}	
-    			else if(parametrosExtras[i].toLowerCase().contains("repeatdelay")){
-    				String delay = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    				delay = delay.substring(0,delay.indexOf('"'));
-					acao.setRepeatDelay(InterpretaDelay(delay,connectorPai));
-    			}	
-    			else if(parametrosExtras[i].toLowerCase().contains("duration")){
-    				String duration = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    				duration = duration.substring(0,duration.indexOf('"'));
-					acao.setRepeatDelay(InterpretaDelay(duration,connectorPai));
-    			}	
-    			else if(parametrosExtras[i].toLowerCase().contains("by")){
-    				String by = parametrosExtras[i].substring(parametrosExtras[i].indexOf("\"")+1,parametrosExtras[i].length()).trim();
-    				by = by.substring(0,by.indexOf('"'));
-					acao.setBy(InterpretaBy(by,connectorPai));
-    			}	
-    		}
-    	}
-		return acao;
-    }
-    
-    //auxiliares
-	
-    private ByParamType InterpretaBy(String by, NCLCausalConnector connectorPai) throws XMLException {
-    	if(by.toLowerCase().contains("$"))
-			return new ByParamType(by, JNSaNaComplements.FindParameter(by.replace("$",""),connectorPai));
-		else
-			return new ByParamType(by);
-	}
-
-	private StringParamType InterpretaValor(String valor,NCLCausalConnector connectorPai)throws XMLException {
-    	if(valor.toLowerCase().contains("$"))
-			return new StringParamType(valor, JNSaNaComplements.FindParameter(valor.replace("$",""),connectorPai));
-		else
-			return new StringParamType(valor);
-	}
-
-	private DoubleParamType InterpretaDelay(String delay,NCLCausalConnector conectorPai) throws XMLException {
-    	if(delay.toLowerCase().contains("$"))
-			return new DoubleParamType(delay, JNSaNaComplements.FindParameter(delay.replace("$",""),conectorPai));
-		else
-			return new DoubleParamType(delay);
-	}
-    
-
-    private KeyParamType InterpretaKey(String key,NCLCausalConnector conectorPai) throws XMLException {
-    		if(key.toLowerCase().contains("$"))
-    			return new KeyParamType(key,JNSaNaComplements.FindParameter(key.replace("$",""),conectorPai));
-    		else
-    			return new KeyParamType(key.toUpperCase());
-	}
-    
-    private IntegerParamType InterpretaInteger(String offset,NCLCausalConnector conectorPai) throws XMLException {
-    		if(offset.toLowerCase().contains("$"))
-    			return new IntegerParamType(offset,JNSaNaComplements.FindParameter(offset.replace("$",""),conectorPai));
-    		else
-    			return new IntegerParamType(offset);
-	}
-    
-	private AssValueParamType InterpretaAssValueParam(String role,NCLCausalConnector conectorPai) throws XMLException {
-		if(role.toLowerCase().contains("$"))
-			return new AssValueParamType(role,JNSaNaComplements.FindParameter(role.replace("$",""),conectorPai));
-		else
-			return new AssValueParamType(role);
-	}
-}
+/* Location:           C:\Users\Convidado\Desktop\pacoteCompleto\jnsTranslator.jar
+ * Qualified Name:     JNSConnectorInterpreter
+ * JD-Core Version:    0.6.2
+ */
