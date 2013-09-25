@@ -28,179 +28,259 @@ public class JNSHeadInterpreter
 
   void setInterpretaRegra(JNSRuleInterpreter InterpretaRegra)
   {
-/*  33 */     this.InterpretaRegra = InterpretaRegra;
+     this.InterpretaRegra = InterpretaRegra;
   }
 
   JNSRuleInterpreter getInterpretaRegra() {
-/*  37 */     return this.InterpretaRegra;
+     return this.InterpretaRegra;
   }
 
   JNSRegionInterpreter getInterpretadorRegiao() {
-/*  41 */     return this.InterpretadorRegiao;
+     return this.InterpretadorRegiao;
   }
 
   JNSDescriptorInterpreter getInterpretadorDescritor() {
-/*  45 */     return this.InterpretadorDescritor;
+     return this.InterpretadorDescritor;
   }
 
   JNSConnectorInterpreter getInterpretaConnector() {
-/*  49 */     return this.InterpretaConnector;
+     return this.InterpretaConnector;
   }
 
   JNSTransitionInterpreter getInterpretaTransicao() {
-/*  53 */     return this.InterpretaTransicao;
+     return this.InterpretaTransicao;
   }
 
   JNSHeadInterpreter() throws XMLException {
-/*  57 */     this.Head = new NCLHead();
+     this.Head = new NCLHead();
   }
-  public NCLHead Interprets(JSONArray jsonHead) throws XMLException, ParseException {
-/*  60 */     return Interprets(jsonHead, Boolean.valueOf(false));
+  public NCLHead Interprets(JSONArray jsonHead) throws XMLException {
+     return Interprets(jsonHead, Boolean.valueOf(false));
   }
 
-  public NCLHead Interprets(JSONArray jsonHead, Boolean imported) throws XMLException, ParseException {
-/*  64 */     this.InterpretadorRegiao = new JNSRegionInterpreter(this.Head);
-/*  65 */     this.InterpretadorDescritor = new JNSDescriptorInterpreter(this);
-/*  66 */     this.InterpretaTransicao = new JNSTransitionInterpreter();
-/*  67 */     this.InterpretaConnector = new JNSConnectorInterpreter();
-/*  68 */     if (jsonHead == null)
-/*  69 */       return this.Head;
-/*  70 */     Vector descritores = new Vector();
-/*  71 */     this.Head.setDescriptorBase(this.InterpretadorDescritor.getBase());
-/*  72 */     Vector headers = new Vector();
-/*  73 */     for (int i = 0; i < jsonHead.size(); i++) {
-/*  74 */       JSONObject elemento = (JSONObject)jsonHead.get(i);
+  public NCLHead Interprets(JSONArray jsonHead, Boolean imported) throws XMLException{
+     this.InterpretadorRegiao = new JNSRegionInterpreter(this.Head);
+     this.InterpretadorDescritor = new JNSDescriptorInterpreter(this);
+     this.InterpretaTransicao = new JNSTransitionInterpreter();
+     this.InterpretaConnector = new JNSConnectorInterpreter();
+     if (jsonHead == null)
+       return this.Head;
+     Vector descritores = new Vector();
+     this.Head.setDescriptorBase(this.InterpretadorDescritor.getBase());
+     Vector headers = new Vector();
+     for (int i = 0; i < jsonHead.size(); i++) {
+       JSONObject elemento = (JSONObject)jsonHead.get(i);
 
-/*  76 */       if (elemento.containsKey("include")) {
-/*  77 */         JSONObject include = (JSONObject)elemento.get("include");
-/*  78 */         if (elemento.containsKey("jnsURI")) {
-/*  79 */           String file = JsonReader.ReadString((String)include.get("jnsURI"));
-/*  80 */           headers.add(JsonReader.parse(file));
+       if (elemento.containsKey("include")) {
+         JSONObject include = (JSONObject)elemento.get("include");
+         if (elemento.containsKey("jnsURI")) {
+           try{
+        		   String file = JsonReader.ReadString((String)include.get("jnsURI"));
+        		   headers.add(JsonReader.parse(file));
+           }
+           catch(ParseException e){
+        	   throw new XMLException("Erro na leitura e/ou interpretação do header jns incluido:\n"+elemento.toString()+"\n"+e.getMessage());
+           }
         }
         else {
-/*  83 */           if (include.containsKey("documentURI")) {
-/*  84 */             NCLImportedDocumentBase baseImport = null;
-/*  85 */             if (this.Head.getImportedDocumentBase() != null) {
-/*  86 */               baseImport = this.Head.getImportedDocumentBase();
-            } else {
-/*  88 */               baseImport = new NCLImportedDocumentBase();
-/*  89 */               this.Head.setImportedDocumentBase(baseImport);
-            }
-/*  91 */             NCLImportNCL importado = new NCLImportNCL();
-/*  92 */             importado.setAlias((String)include.get("alias"));
-/*  93 */             importado.setDocumentURI(new SrcType((String)include.get("documentURI")));
-/*  94 */             baseImport.addImportNCL(importado);
+           if (include.containsKey("documentURI")) {
+             NCLImportedDocumentBase baseImport = null;
+             try{
+	             if (this.Head.getImportedDocumentBase() != null) {
+	               baseImport = this.Head.getImportedDocumentBase();
+	             } else {
+	               baseImport = new NCLImportedDocumentBase();
+	               this.Head.setImportedDocumentBase(baseImport);
+	             }
+	             NCLImportNCL importado = new NCLImportNCL();
+	             importado.setAlias((String)include.get("alias"));
+	             importado.setDocumentURI(new SrcType((String)include.get("documentURI")));
+	             baseImport.addImportNCL(importado);
+             }
+             catch(XMLException e){
+          	   throw new XMLException("Problemas na leitura e/ou interpretação da base de docuemntos\n"+elemento.toString()+"\n"+e.toString());
+             }
           }
 
-/*  97 */           if (include.containsKey("descriptorURI")) {
-/*  98 */             NCLImportBase importado = new NCLImportBase();
-/*  99 */             importado.setDocumentURI(new SrcType((String)include.get("descriptorURI")));
-/* 100 */             importado.setAlias((String)include.get("alias"));
-/* 101 */             this.InterpretadorDescritor.getBase().addImportBase(importado);
+           if (include.containsKey("descriptorURI")) {
+        	try{
+             NCLImportBase importado = new NCLImportBase();
+             importado.setDocumentURI(new SrcType((String)include.get("descriptorURI")));
+             importado.setAlias((String)include.get("alias"));
+             this.InterpretadorDescritor.getBase().addImportBase(importado);
+        	}
+        	catch(XMLException e){
+        		throw new XMLException("Problemas na leitura e/ou interpretação da base de descritores\n"+elemento.toString()+"\n"+e.toString());
+        	}
           }
-/* 103 */           if (include.containsKey("regionURI")) {
-/* 104 */             NCLImportBase importado = new NCLImportBase();
-/* 105 */             importado.setDocumentURI(new SrcType((String)include.get("regionURI")));
-/* 106 */             importado.setAlias((String)include.get("alias"));
-/* 107 */             if (include.containsKey("region")) {
-/* 108 */               String region = (String)include.get("region");
-/* 109 */               importado.setRegion((NCLRegion)this.InterpretadorRegiao.getBase().findRegion(region));
-            }
-/* 111 */             include.containsKey("baseId");
-
-/* 114 */             this.InterpretadorRegiao.addImportBase(importado);
+           if (include.containsKey("regionURI")) {
+        	 try{
+	             NCLImportBase importado = new NCLImportBase();
+	             importado.setDocumentURI(new SrcType((String)include.get("regionURI")));
+	             importado.setAlias((String)include.get("alias"));
+	             if (include.containsKey("region")) {
+	               String region = (String)include.get("region");
+	               importado.setRegion((NCLRegion)this.InterpretadorRegiao.getBase().findRegion(region));
+	             }
+	             include.containsKey("baseId");
+	             this.InterpretadorRegiao.addImportBase(importado);
+        	 }
+        	 catch(XMLException e){
+         		throw new XMLException("Problemas na leitura e/ou interpretação da base de regiões\n"+elemento.toString()+"\n"+e.toString());
+         	 }
           }
-/* 116 */           if (include.containsKey("ruleURI")) {
-/* 117 */             NCLImportBase importado = new NCLImportBase();
-/* 118 */             importado.setDocumentURI(new SrcType((String)include.get("ruleURI")));
-/* 119 */             importado.setAlias((String)include.get("alias"));
-/* 120 */             this.InterpretaRegra.getBase().addImportBase(importado);
+           if (include.containsKey("ruleURI")) {
+        	try{
+             NCLImportBase importado = new NCLImportBase();
+             importado.setDocumentURI(new SrcType((String)include.get("ruleURI")));
+             importado.setAlias((String)include.get("alias"));
+             this.InterpretaRegra.getBase().addImportBase(importado);
+        	}
+        	catch(XMLException e){
+         		throw new XMLException("Problemas na leitura e/ou interpretação da base de regras\n"+elemento.toString()+"\n"+e.toString());
+         	}
           }
-/* 122 */           if (include.containsKey("connectorURI")) {
-/* 123 */             NCLImportBase importado = new NCLImportBase();
-/* 124 */             importado.setDocumentURI(new SrcType((String)include.get("connectorURI")));
-/* 125 */             importado.setAlias((String)include.get("alias"));
-/* 126 */             this.InterpretaConnector.getBase().addImportBase(importado);
+           if (include.containsKey("connectorURI")) {
+        	try{
+             NCLImportBase importado = new NCLImportBase();
+             importado.setDocumentURI(new SrcType((String)include.get("connectorURI")));
+             importado.setAlias((String)include.get("alias"));
+             this.InterpretaConnector.getBase().addImportBase(importado);
+        	}
+        	catch(XMLException e){
+         		throw new XMLException("Problemas na leitura e/ou interpretação da base de conectores\n"+elemento.toString()+"\n"+e.toString());
+         	 }
           }
-/* 128 */           if (include.containsKey("transitionURI")) {
-/* 129 */             NCLImportBase importado = new NCLImportBase();
-/* 130 */             importado.setDocumentURI(new SrcType((String)include.get("transitionURI")));
-/* 131 */             importado.setAlias((String)include.get("alias"));
-/* 132 */             this.InterpretaTransicao.getBase().addImportBase(importado);
+           if (include.containsKey("transitionURI")) {
+        	try{
+             NCLImportBase importado = new NCLImportBase();
+             importado.setDocumentURI(new SrcType((String)include.get("transitionURI")));
+             importado.setAlias((String)include.get("alias"));
+             this.InterpretaTransicao.getBase().addImportBase(importado);
+        	}
+        	catch(XMLException e){
+         		throw new XMLException("Problemas na leitura e/ou interpretação da base de transições:"+elemento.toString()+"\n"+e.toString());
+         	}
           }
         }
       }
-/* 136 */       if (elemento.containsKey("transtion")) {
-/* 137 */         if (imported.booleanValue()) {
-/* 138 */           if (this.Head.getTransitionBase().getTransitions().get((String)((JSONObject)elemento.get("transtion")).get("id")) == null)
-/* 139 */             this.InterpretaTransicao.Add((JSONObject)elemento.get("transtion"));
-        }
-        else
-/* 142 */           this.InterpretaTransicao.Add((JSONObject)elemento.get("transtion"));
-      }
-/* 144 */       else if ((elemento.containsKey("descriptor")) || (elemento.containsKey("descriptorSwitch"))) {
-/* 145 */         if (imported.booleanValue()) {
-/* 146 */           if (this.Head.getDescriptorBase().getDescriptor((String)((JSONObject)elemento.get("transtion")).get("id")) == null)
-/* 147 */             descritores.add(elemento);
-        }
-        else
-/* 150 */           descritores.add(elemento);
-      }
-/* 152 */       else if (elemento.containsKey("region")) {
-/* 153 */         if (imported.booleanValue()) {
-/* 154 */           if (this.InterpretadorRegiao.Bases.findRegion((String)((JSONObject)elemento.get("transtion")).get("id")) == null)
-/* 155 */             this.InterpretadorRegiao.Add((JSONObject)elemento.get("region"));
-        }
-        else
-/* 158 */           this.InterpretadorRegiao.Add((JSONObject)elemento.get("region"));
-      }
-/* 160 */       else if (elemento.containsKey("meta")) {
-/* 161 */         this.Head.addMeta(JNSMetaInterpreter.InterMeta((JSONObject)elemento.get("meta")));
-      }
-/* 163 */       else if (elemento.containsKey("metadata")) {
-/* 164 */         this.Head.addMetadata(JNSMetaInterpreter.InterMetadata((String)elemento.get("metadata")));
-      }
-/* 166 */       else if (elemento.containsKey("rule")) {
-/* 167 */         if (imported.booleanValue()) {
-/* 168 */           if (this.Head.getRuleBase().getRule((String)((JSONObject)elemento.get("transtion")).get("id")) == null)
-/* 169 */             this.InterpretaRegra.Add((JSONObject)elemento.get("rule"));
+      if (elemento.containsKey("transtion")) {
+	   try{
+         if (imported.booleanValue()) {
+           if (this.Head.getTransitionBase().getTransitions().get((String)((JSONObject)elemento.get("transtion")).get("id")) != null)
+           {
+             this.InterpretaTransicao.Add((JSONObject)elemento.get("transtion"));
+           }
         }
         else
-/* 172 */           this.InterpretaRegra.Add((JSONObject)elemento.get("rule"));
+           this.InterpretaTransicao.Add((JSONObject)elemento.get("transtion"));
+	   }
+   	   catch(XMLException e){
+    		throw new XMLException("Problemas na leitura e/ou interpretação da transição:"+((JSONObject)elemento.get("transition")).get("id")+"\n"+e.toString());
+       }
       }
-/* 174 */       else if (elemento.containsKey("connector")) {
-/* 175 */         if (imported.booleanValue()) {
-/* 176 */           if (this.Head.getConnectorBase().getCausalConnector((String)((JSONObject)elemento.get("transtion")).get("id")) == null)
-/* 177 */             this.InterpretaConnector.Add((JSONObject)elemento.get("connector"));
+      else if ((elemento.containsKey("descriptor")) || (elemento.containsKey("descriptorSwitch"))) {
+         if (imported.booleanValue()) {
+           if (this.Head.getDescriptorBase().getDescriptor((String)((JSONObject)elemento.get("descriptor")).get("id")) != null)
+             descritores.add(elemento);
+         }
+         else
+           descritores.add(elemento);
+      }
+      else if (elemento.containsKey("region")) {
+    	try{
+         if (imported.booleanValue()) {
+           if (this.InterpretadorRegiao.Bases.findRegion((String)((JSONObject)elemento.get("transtion")).get("id")) == null)
+             this.InterpretadorRegiao.Add((JSONObject)elemento.get("region"));
+         }
+         else
+           this.InterpretadorRegiao.Add((JSONObject)elemento.get("region"));
+    	}
+        catch(XMLException e){
+     		throw new XMLException("Problemas na leitura e/ou interpretação da região:"+((JSONObject)elemento.get("region")).get("id")+"\n"+e.toString());
+        }
+      }
+      else if (elemento.containsKey("meta")) {
+    	try{
+         this.Head.addMeta(JNSMetaInterpreter.InterMeta((JSONObject)elemento.get("meta")));
+    	}
+    	catch(XMLException e){
+     		throw new XMLException("Problemas na leitura e/ou interpretação da meta\n"+elemento.toString()+"\n"+e.toString());
+        }
+      }
+      else if (elemento.containsKey("metadata")) {
+    	try{
+         this.Head.addMetadata(JNSMetaInterpreter.InterMetadata((String)elemento.get("metadata")));
+    	}
+    	catch(XMLException e){
+     		throw new XMLException("Problemas na leitura e/ou interpretação da metadata\n"+elemento.toString()+"\n"+e.toString());
+        }
+      }
+      else if (elemento.containsKey("rule")) {
+       try{
+        if (imported.booleanValue()) {
+           if (this.Head.getRuleBase().getRule((String)((JSONObject)elemento.get("transtion")).get("id")) == null)
+             this.InterpretaRegra.Add((JSONObject)elemento.get("rule"));
+        }
+        else
+           this.InterpretaRegra.Add((JSONObject)elemento.get("rule"));
+       }
+       catch(XMLException e){
+    		throw new XMLException("Problemas na leitura e/ou interpretação da regra:"+((JSONObject)elemento.get("rule")).get("id")+"\n"+e.toString());
+       }
+      }
+      else if (elemento.containsKey("connector")) {
+       try{
+        if (imported.booleanValue()) {
+           if (this.Head.getConnectorBase().getCausalConnector((String)((JSONObject)elemento.get("transtion")).get("id")) == null)
+             this.InterpretaConnector.Add((JSONObject)elemento.get("connector"));
         }
         else {
-/* 180 */           this.InterpretaConnector.Add((JSONObject)elemento.get("connector"));
+           this.InterpretaConnector.Add((JSONObject)elemento.get("connector"));
         }
       }
-    }
-int i;
-/* 184 */     for (i = 0; i < descritores.size(); i++) {
-/* 185 */       JSONObject elemento = (JSONObject)descritores.get(i);
-/* 186 */       if (elemento.containsKey("descriptor")) {
-/* 187 */         this.InterpretadorDescritor.Add((JSONObject)elemento.get("descriptor"));
+      catch(XMLException e){
+    		throw new XMLException("Problemas na leitura e/ou interpretação do conector:"+((JSONObject)elemento.get("transition")).get("id")+"\n"+e.toString());
       }
-/* 189 */       else if (elemento.containsKey("descriptorSwitch")) {
-/* 190 */         this.InterpretadorDescritor.AddSwitc((JSONObject)elemento.get("descriptorSwitch"));
+     }
+    }
+    int i;
+    for (i = 0; i < descritores.size(); i++) {
+       JSONObject elemento = (JSONObject)descritores.get(i);
+       if (elemento.containsKey("descriptor")) {
+    	 try{
+    		 this.InterpretadorDescritor.Add((JSONObject)elemento.get("descriptor"));
+    	 }
+    	 catch(XMLException e){
+     		throw new XMLException("Problemas na leitura e/ou interpretação do desctitor:"+((JSONObject)elemento.get("descriptor")).get("id")+"\n"+e.toString());
+    	 }
+      }
+       else if (elemento.containsKey("descriptorSwitch")) {
+    	 try{
+    		 this.InterpretadorDescritor.AddSwitc((JSONObject)elemento.get("descriptorSwitch"));
+    	 }
+    	 catch(XMLException e){
+      		throw new XMLException("Problemas na leitura e/ou interpretação do descriptorSwitch:"+((JSONObject)elemento.get("descriptorSwitch")).get("id")+"\n"+e.toString());
+     	 }
       }
     }
 
-/* 194 */     for (i = 0; i < headers.size(); i++) {
-/* 195 */       Interprets((JSONArray)headers.get(i), Boolean.valueOf(true));
+    for (i = 0; i < headers.size(); i++) {
+      try{
+       Interprets((JSONArray)headers.get(i), Boolean.valueOf(true));
+      }
+      catch(XMLException e){
+    		throw new XMLException("Problemas na leitura e/ou interpretação do header incluido:"+((JSONArray)headers.get(i)).toString()+"\n"+e.toString());
+   	 }
     }
 
-/* 198 */     if (this.InterpretaTransicao.getBase().hasTransition())
-/* 199 */       this.Head.setTransitionBase(this.InterpretaTransicao.getBase());
-/* 200 */     this.InterpretadorRegiao.AdicionaRegioesFaltantes();
-/* 201 */     return this.Head;
+     if (this.InterpretaTransicao.getBase().hasTransition())
+       this.Head.setTransitionBase(this.InterpretaTransicao.getBase());
+     this.InterpretadorRegiao.AdicionaRegioesFaltantes();
+     return this.Head;
   }
 
-  public void InsertBases()
-    throws XMLException
+  public void InsertBases() throws XMLException
   {
      this.InterpretadorDescritor.ReInterprets();
      if (this.InterpretadorDescritor.getBase().hasDescriptor())
